@@ -1,0 +1,152 @@
+@import "tailwindcss";
+
+@custom-variant lantern (&:where([data-theme="lantern"], [data-theme="lantern"] *));
+
+@theme {
+  --color-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --radius-*: initial;
+  --font-*: initial;
+
+  --spacing: 4px;
+  --radius-ds: 2px;
+  --font-ui: "Archivo Variable", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Courier New", monospace;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1440px;
+}
+
+/* Colours resolve through theme variables so Paper/Lantern switch without dark: classes */
+@theme inline {
+  --color-page: var(--bg-page);
+  --color-raised: var(--bg-raised);
+  --color-sunken: var(--bg-sunken);
+  --color-ink: var(--ink-primary);
+  --color-ink-2: var(--ink-secondary);
+  --color-rule: var(--rule-default);
+  --color-rule-strong: var(--rule-strong);
+  --color-accent: var(--accent-vermilion);
+  --color-on-accent: var(--ink-on-accent);
+  --color-hand-painted: var(--status-hand-painted);
+  --color-pre-painted: var(--status-pre-painted);
+  --color-not-painted: var(--status-not-painted);
+  --color-error: var(--feedback-error);
+  --color-success: var(--feedback-success);
+}
+
+@layer base {
+  :root, [data-theme="paper"] {
+    color-scheme: light;
+    --bg-page: #F3EFE6; --bg-raised: #FBF9F4; --bg-sunken: #E9E3D6;
+    --ink-primary: #1B1A17; --ink-secondary: #5A564C;
+    --rule-default: #D6CEBD; --rule-strong: #1B1A17;
+    --accent-vermilion: #B73A1B;
+    --status-hand-painted: #9A6B12; --status-pre-painted: #2C6A64;
+    --status-not-painted: var(--ink-secondary);
+    --feedback-error: var(--accent-vermilion); --feedback-success: #3F6B2E;
+    --ink-on-accent: var(--bg-raised);
+  }
+  [data-theme="lantern"] {
+    color-scheme: dark;
+    --bg-page: #15140F; --bg-raised: #1E1C16; --bg-sunken: #0F0E0B;
+    --ink-primary: #ECE5D5; --ink-secondary: #A8A091;
+    --rule-default: #34312A; --rule-strong: #ECE5D5;
+    --accent-vermilion: #E0623F;
+    --status-hand-painted: #D6A84A; --status-pre-painted: #6FB1A8;
+    --status-not-painted: var(--ink-secondary);
+    --feedback-error: var(--accent-vermilion); --feedback-success: #8DBA74;
+    --ink-on-accent: var(--bg-page);
+  }
+  html, body { @apply bg-page text-ink font-ui; }
+  body { font-size: 15px; line-height: 22px; -webkit-font-smoothing: antialiased; }
+  :focus-visible { outline: 2px solid var(--rule-strong); outline-offset: 2px; }
+}
+
+/* Type styles: family, weight, width, size, line height and tracking stay together */
+@utility type-display {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-stretch: 125%;
+  font-size: 32px;
+  line-height: 36px;
+}
+@utility type-display-m {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-stretch: 125%;
+  font-size: 26px;
+  line-height: 30px;
+}
+@utility type-title {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-stretch: 112.5%;
+  font-size: 20px;
+  line-height: 26px;
+}
+@utility type-body {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 22px;
+}
+@utility type-body-strong {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 22px;
+}
+@utility type-dense {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-stretch: 75%;
+  font-size: 14px;
+  line-height: 20px;
+}
+@utility type-label {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+@utility type-mono {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 18px;
+}
+@utility type-mono-lg {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 26px;
+}
+/* Owner stamp initials: 11 px so two letters fit the 20 px box (design-system decision 4) */
+@utility type-stamp {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1;
+}
+/* Wordmark text at its regular size: Archivo Expanded 700, 20/24 */
+@utility type-wordmark {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-stretch: 125%;
+  font-size: 20px;
+  line-height: 24px;
+}
+
+/* Loading progress rule (buttons, waking-server banner): a short rule sliding along the bottom edge */
+@theme {
+  --animate-progress-rule: progress-rule 1.2s linear infinite;
+  @keyframes progress-rule {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(250%); }
+  }
+}
