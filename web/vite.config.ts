@@ -5,6 +5,8 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    // Fail when 5173 is taken instead of moving to another port, so the app's URL never changes silently.
+    strictPort: true,
     proxy: {
       '/api': 'http://localhost:8080',
     },
