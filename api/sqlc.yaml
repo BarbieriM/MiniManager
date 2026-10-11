@@ -1,0 +1,46 @@
+# `make sqlc` generates Go code from each feature's queries.sql into that feature's package.
+# The schema is read from the goose migrations; sqlc skips their Down sections.
+version: "2"
+sql:
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/users/queries.sql
+    gen:
+      go: &go
+        package: users
+        # The users package exposes its own User type; sqlc's generated row types stay unexported there.
+        rename:
+          user: userRow
+          user_role: userRole
+          user_role_admin: userRoleAdmin
+          user_role_member: userRoleMember
+        out: internal/features/users
+        sql_package: pgx/v5
+        output_db_file_name: sqlc_db.go
+        output_models_file_name: sqlc_models.go
+        overrides:
+          - db_type: uuid
+            go_type: github.com/google/uuid.UUID
+          - db_type: uuid
+            nullable: true
+            go_type:
+              import: github.com/google/uuid
+              type: UUID
+              pointer: true
+          - db_type: timestamptz
+            go_type: time.Time
+          - db_type: timestamptz
+            nullable: true
+            go_type:
+              type: time.Time
+              pointer: true
+          - db_type: citext
+            go_type: string
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/auth/queries.sql
+    gen:
+      go:
+        <<: *go
+        package: auth
+        out: internal/features/auth

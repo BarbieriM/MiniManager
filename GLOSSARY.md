@@ -28,6 +28,10 @@ _Avoid_: Player (for this role), viewer
 An emailed, single-use offer to create a User with a given Role. Invites are the only way to sign up.
 _Avoid_: Invitation link, registration
 
+**Session**:
+One login of a User on one device. It lasts until the User logs out, leaves it unused for too long, or resets their password.
+_Avoid_: Token family, device, login (as a noun)
+
 ## Catalog
 
 **Catalog**:

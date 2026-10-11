@@ -1,0 +1,17 @@
+# Local development database only. Start it with `make db`; nothing applies migrations until you run `make migrate`.
+# Port 5433 on the host, so it does not clash with a Homebrew Postgres on 5432.
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: mini
+      POSTGRES_PASSWORD: mini
+      POSTGRES_DB: mini_manager
+    ports:
+      - "5433:5432"
+    volumes:
+      # Postgres 18 images keep their data under /var/lib/postgresql, not /var/lib/postgresql/data.
+      - db-data:/var/lib/postgresql
+
+volumes:
+  db-data:
