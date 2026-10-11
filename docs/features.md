@@ -194,7 +194,7 @@ The database choice (PostgreSQL) is covered in section 4 of `plan.md`.
 | size | enum: tiny, small, medium, large, huge, gargantuan | yes |
 | challengeRating | number from the CR list (0, 1/8, 1/4, 1/2, 1 to 30), stored as decimal | no (nullable) |
 | quantity | integer | yes, default 1 |
-| paintStatus | enum: pre\_painted, hand\_painted, not\_painted | yes, default not\_painted |
+| paintStatus | enum: pre\_painted, hand\_painted, unpainted *(renamed from not\_painted / "Not painted", 2026-10-11)* | yes, default unpainted |
 | tags | list of strings | no |
 | storageLocation | string, up to 60 chars | no |
 | manufacturer | string, up to 60 chars | no |
@@ -218,6 +218,9 @@ The database choice (PostgreSQL) is covered in section 4 of `plan.md`.
 - Missing name: "Name is required."
 - Bad quantity: "Quantity must be a whole number from 1 to 999."
 - Bad CR: "Pick a valid Challenge Rating."
+- Tag too long or empty: "A tag must be 1 to 30 characters." *(Clarified 2026-10-11.)*
+- Tag with other characters: "Use letters, numbers, - or _ in tags, with an optional namespace like faction:drow." *(Clarified 2026-10-11.)*
+- More than 20 tags: "A miniature can have at most 20 tags." *(Clarified 2026-10-11.)*
 - Version conflict: "Someone changed this miniature while you were editing. Reload to see their changes."
 - Not found: 404 "This miniature no longer exists."
 
@@ -227,7 +230,7 @@ The database choice (PostgreSQL) is covered in section 4 of `plan.md`.
 
 **Acceptance criteria**
 
-1. Given I fill name, type and size only, when I save, then the mini appears in the list owned by me with quantity 1 and status not painted.
+1. Given I fill name, type and size only, when I save, then the mini appears in the list owned by me with quantity 1 and status unpainted.
 2. Given quantity 0 or 2.5, when I save, then I see the quantity error and nothing is saved.
 3. Given two people open the same mini and both save, when the second one saves, then they get the conflict message.
 4. Given I confirm a delete, when I return to the list, then the mini and its photos are gone.
@@ -346,7 +349,7 @@ These cards are shorter on purpose: they fix the rules that shape the MVP data m
 1. Each line is matched with the same filter logic as Card 6.
 2. A line is covered when the summed quantity of matching minis is at least its count.
 3. One physical mini is counted for at most one line, so a goblin used in line 1 is not offered again in line 2.
-4. Painted minis (pre-painted or hand-painted) are suggested before not painted ones, then by owner present at the session (optional input).
+4. Painted minis (pre-painted or hand-painted) are suggested before unpainted ones, then by owner present at the session (optional input).
 5. A line that cannot be covered shows the shortfall ("3 of 4 found") and the closest alternatives (same type, one size off).
 
 **Validations and error messages:** a line with no filters: "Add at least one filter to this line."

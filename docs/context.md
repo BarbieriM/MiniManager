@@ -60,7 +60,7 @@ removed, so classes such as `bg-purple-500`, `shadow-lg`, `rounded-xl` or `font-
   --color-on-accent: var(--ink-on-accent);
   --color-hand-painted: var(--status-hand-painted);
   --color-pre-painted: var(--status-pre-painted);
-  --color-not-painted: var(--status-not-painted);
+  --color-unpainted: var(--status-unpainted);
   --color-error: var(--feedback-error);
   --color-success: var(--feedback-success);
 }
@@ -73,7 +73,7 @@ removed, so classes such as `bg-purple-500`, `shadow-lg`, `rounded-xl` or `font-
     --rule-default: #D6CEBD; --rule-strong: #1B1A17;
     --accent-vermilion: #B73A1B;
     --status-hand-painted: #9A6B12; --status-pre-painted: #2C6A64;
-    --status-not-painted: var(--ink-secondary);
+    --status-unpainted: var(--ink-secondary);
     --feedback-error: var(--accent-vermilion); --feedback-success: #3F6B2E;
     --ink-on-accent: var(--bg-raised);
   }
@@ -84,7 +84,7 @@ removed, so classes such as `bg-purple-500`, `shadow-lg`, `rounded-xl` or `font-
     --rule-default: #34312A; --rule-strong: #ECE5D5;
     --accent-vermilion: #E0623F;
     --status-hand-painted: #D6A84A; --status-pre-painted: #6FB1A8;
-    --status-not-painted: var(--ink-secondary);
+    --status-unpainted: var(--ink-secondary);
     --feedback-error: var(--accent-vermilion); --feedback-success: #8DBA74;
     --ink-on-accent: var(--bg-page);
   }
@@ -165,13 +165,16 @@ web/src/
                             only to serve it (sub-components, its hook and context), e.g.
                             Field/ = Field.tsx, FieldError.tsx, FieldContext.ts, useField.ts, Field.test.tsx
   shared/ui/Icon/Icon.tsx   inline SVG icons redrawn from the reference (1.5 px stroke, 16/20 px)
-  shared/ui/internal/       plumbing used by several components (control box classes, listbox keyboard and
-                            popover pieces); not exported from index.ts except the Option type
+  shared/ui/internal/       plumbing used by several components (control box classes, button classes, listbox
+                            keyboard and popover pieces); not exported from index.ts except the Option and
+                            CatalogItem types
   shared/lib/               one function per file with its test next to it
                             (formatChallengeRating.ts + formatChallengeRating.test.ts)
   test/                     Vitest setup and shared test helpers, one per file
   shared/lib/mergeClassNames.ts  clsx + tailwind-merge: joins class names, later Tailwind classes win
-  shared/api/               fetch client, problem+json parsing, auth refresh, TanStack Query keys
+  shared/api/               fetch client, problem+json parsing, the slow-request tracker, TanStack Query keys
+                            (queryKeys.ts). The refresh-and-retry on 401 lives in features/auth/AuthProvider,
+                            because it needs the in-memory access token (decided 2026-10-11).
   app/                      router, providers, AppShell (appbar / mobile header / bottom bar / banners)
   features/<feature>/       pages and feature-only components; no styling primitives here
 ```
@@ -224,7 +227,7 @@ Library test for behaviour (not snapshots). Keep variant styles in a `variants` 
 | --- | --- | --- |
 | `BaseGlyph` | `creatureSize: 'tiny'…'gargantuan'`, `size?: 'icon' \| 'placeholder'` | 16 px SVG square: footprint on the 5 ft grid scaled into the box (Tiny quarter cell, Small dot in one cell, Medium full cell, Large 2×2, Huge 3×3, Gargantuan 4×4). `aria-label` = size word. Also used large as the no-photo placeholder. |
 | `ChallengeRatingStamp` | `challengeRating: number \| null` | Plex Mono 13 in a 1 px `border-rule-strong` box, h-5, px-2: `CR 1/4`, `CR 5`, `CR —`. Format 0.125/0.25/0.5 as fractions. |
-| `PaintMark` | `status: 'pre_painted' \| 'hand_painted' \| 'not_painted'`, `showLabel?` | 10 px circle: hand-painted filled `bg-hand-painted`, pre-painted half-filled `pre-painted`, not painted empty outline `border-not-painted`. Without label it gets a tooltip and `aria-label`. |
+| `PaintMark` | `status: 'pre_painted' \| 'hand_painted' \| 'unpainted'`, `showLabel?` | 10 px circle: hand-painted filled `bg-hand-painted`, pre-painted half-filled `pre-painted`, unpainted empty outline `border-unpainted`. Without label it gets a tooltip and `aria-label`. |
 | `OwnerStamp` | `initials`, `isCurrentUser?`, `size?: 'sm' \| 'lg'` | 20 px square, 1 px border, Plex Mono 11; `isCurrentUser` = filled ink with page-colour text. `lg` = 64 px, Plex Mono 22, used once on Profile. |
 | `Quantity` | `quantity` | `×4` in `type-mono`, right-aligned, min width 48 px so ×999 lines up with ×1. |
 | `Wordmark` | `size?: 'md' \| 'lg'` | "Mini Manager" in `type-display` width; the M drawn on a 2×2 base-glyph grid (SVG). |
@@ -242,7 +245,7 @@ Library test for behaviour (not snapshots). Keep variant styles in a `variants` 
 | `ChallengeRatingRange` | Two selects of official CR values; min > max shows "Minimum CR cannot be higher than maximum CR." |
 | `TagInput` | Autocomplete from `GET /tags`; tags render as `Tag` (h-7, Plex Mono 13, `namespace:value` with the namespace in `text-ink-2`), lower-cased on entry, max 20. |
 | `Textarea` | Counter (notes ≤ 1000). |
-| `Segmented` | Two-way (Match any / Match all) and three-way (paint status in forms: Not painted / Pre-painted / Hand-painted). Equal segments, selected = ink fill. Never a dropdown for three options. |
+| `Segmented` | Two-way (Match any / Match all) and three-way (paint status in forms: Unpainted / Pre-painted / Hand-painted). Equal segments, selected = ink fill. Never a dropdown for three options. |
 | `Checkbox`, `CheckboxList` | List rows with counts in mono, ≥ 44 px rows on phone. |
 | `FileDrop` / `PhotoSlot` | 128 px slot: empty (base glyph), uploading (progress), uploaded, cover badge (`type-label` on ink), error; tools are 44 px on phone. |
 | `Tabs` | Ink underline on the current tab, never colour. |
@@ -294,9 +297,9 @@ Each route has the states shown in `screens.html`. Copy, limits and rules come f
 | `/reset-password?token=` | Set new password | invalid/expired link |
 | `/invite/:token` | Accept invite | email read-only, expired/used invite, success → catalog |
 | `/` | Catalog (home) | table / grid (desktop), cards (mobile), filters open, CR error, empty first use, no results, loading, end of list |
-| `/minis/new` | Add miniature | required name, type, size first; defaults qty 1, not painted |
+| `/minis/new` | Add miniature | required name, type, size first; defaults qty 1, unpainted |
 | `/minis/:id` | Details | owner/admin (Edit, Delete) vs other member (note panel, no actions) |
-| `/minis/:id/edit` | Edit | inline errors, owner select for admin only (read-only for members), version conflict dialog |
+| `/minis/:id/edit` | Edit | inline errors, owner select for admins only (members get no owner field at all; decided 2026-10-10), version conflict dialog, quantity 0 offers "Delete this miniature instead" |
 | `/minis/:id` (deleted) | Not found | link back to catalog |
 | `/profile`, `/profile/password` | Account | saved toast; wrong current password; success ("other devices were logged out") |
 | `/admin/members` | Members (admin) | invite dialog/sheet, email already registered, sent but email down (LinkBox), change role, deactivate, last-admin error |

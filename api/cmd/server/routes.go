@@ -9,12 +9,18 @@ import (
 	"strings"
 
 	"github.com/BarbieriM/MiniManager/api/internal/features/auth"
+	"github.com/BarbieriM/MiniManager/api/internal/features/miniatures"
+	"github.com/BarbieriM/MiniManager/api/internal/features/users"
+	platformauth "github.com/BarbieriM/MiniManager/api/internal/platform/auth"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/httpx"
 )
 
 // handlerDeps is everything the routes need, built in main and in tests.
 type handlerDeps struct {
-	auth *auth.Service
+	auth         *auth.Service
+	users        *users.Service
+	miniatures   *miniatures.Service
+	accessTokens *platformauth.AccessTokens
 	// webDir holds the built SPA (web/dist). Empty means the API runs alone, as in `make dev`.
 	webDir string
 }
@@ -23,6 +29,9 @@ type handlerDeps struct {
 func newHandler(deps handlerDeps) http.Handler {
 	mux := http.NewServeMux()
 	auth.NewHandler(deps.auth).Register(mux)
+	requireUser := deps.users.RequireUser(deps.accessTokens)
+	users.NewHandler(deps.users).Register(mux, requireUser)
+	miniatures.NewHandler(deps.miniatures).Register(mux, requireUser)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteProblem(w, http.StatusNotFound, "There is no API endpoint at this path.")

@@ -61,7 +61,7 @@ pinned in `go.mod` and run as `go tool <name>` from `api/`; the web app uses Yar
 make dev          # local db + api with live reload + vite dev server (vite proxies /api to :8080)
 make db           # start the local Postgres 18 from compose.yaml on port 5433 (applies no migrations)
 make test         # go test ./... (needs Docker for testcontainers) + yarn test
-make lint         # go vet, staticcheck, gofmt check, oxlint, tsc -b --noEmit
+make lint         # sqlc diff, go vet, staticcheck, gofmt check, oxlint, tsc -b --noEmit
 make sqlc         # regenerate Go code from queries.sql
 make migrate-new name=add_x   # new numbered goose migration
 make migrate-status           # applied and pending migrations (creates goose_db_version on a fresh db)
@@ -96,7 +96,7 @@ Run `make lint test` before saying a task is done, and report failures honestly.
 
 - `uuid` v7 ids, `timestamptz` everywhere, `citext` emails, Postgres enums for fixed sets.
 - Enums: `user_role` (admin, member); `creature_size` (tiny … gargantuan, order matters for sorting);
-  `creature_type` (14 D&D 5e types); `paint_status` (**pre_painted, hand_painted, not_painted**, default not_painted).
+  `creature_type` (14 D&D 5e types); `paint_status` (**pre_painted, hand_painted, unpainted**, default unpainted).
 - Tags are `text[]` (trimmed, lower-cased, deduped, max 20) with a GIN index; not a Tag table.
 - `name_search` (lower-cased, accents removed) is written by the service on every save; search uses `pg_trgm`.
 - `system_stats` and `custom_fields` are JSONB and stay empty in the MVP.

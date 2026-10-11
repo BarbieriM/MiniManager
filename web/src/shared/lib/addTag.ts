@@ -13,7 +13,9 @@ export type AddTagResult = { ok: true; tags: string[] } | { ok: false; message: 
 // addTag returns the new tag list, or the message to show when the tag cannot be added.
 export function addTag(currentTags: string[], typedTag: string): AddTagResult {
   const tag = normalizeTag(typedTag)
-  if (tag.length < 1 || tag.length > maxTagLength) {
+  // Count characters (code points) like the API, not UTF-16 units, so an emoji counts once.
+  const characterCount = [...tag].length
+  if (characterCount < 1 || characterCount > maxTagLength) {
     return { ok: false, message: `A tag must be 1 to ${maxTagLength} characters.` }
   }
   if (!tagPattern.test(tag)) {

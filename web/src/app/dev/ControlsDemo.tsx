@@ -65,7 +65,7 @@ export function ControlsDemo(): ReactElement {
   const [tags, setTags] = useState(['goblinoid', 'faction:zhentarim'])
   const [pickedSizes, setPickedSizes] = useState<string[]>(['small', 'medium'])
   const [tagMatch, setTagMatch] = useState<'any' | 'all'>('any')
-  const [paint, setPaint] = useState<PaintStatus>('not_painted')
+  const [paint, setPaint] = useState<PaintStatus>('unpainted')
   const [chips, setChips] = useState([
     ['Size', 'Small'],
     ['Size', 'Medium'],
@@ -232,7 +232,7 @@ export function ControlsDemo(): ReactElement {
               value={paint}
               onChange={setPaint}
               options={[
-                { value: 'not_painted', label: 'Not painted' },
+                { value: 'unpainted', label: 'Unpainted' },
                 { value: 'pre_painted', label: 'Pre-painted' },
                 { value: 'hand_painted', label: 'Hand-painted' },
               ]}

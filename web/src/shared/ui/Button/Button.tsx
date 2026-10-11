@@ -1,9 +1,9 @@
 import type { ComponentProps, MouseEvent, ReactElement } from 'react'
-import { mergeClassNames } from '../../lib/mergeClassNames'
 import { Icon, type IconName } from '../Icon/Icon'
+import { buttonClassName, type ButtonVariant } from '../internal/buttonClassName'
 
 type ButtonProps = ComponentProps<'button'> & {
-  variant?: 'primary' | 'secondary' | 'quiet' | 'destructive' | 'confirm'
+  variant?: ButtonVariant
   // sm is the compact desktop size; on phones it still grows to 44 px.
   size?: 'md' | 'sm'
   icon?: IconName
@@ -11,22 +11,7 @@ type ButtonProps = ComponentProps<'button'> & {
   fullWidth?: boolean
 }
 
-const pressedClassNames = 'active:border-ink active:bg-ink active:text-page'
-
-const variantClassNames = {
-  primary: `bg-accent text-on-accent hover:border-rule-strong ${pressedClassNames} disabled:bg-sunken`,
-  confirm: `bg-accent text-on-accent hover:border-rule-strong ${pressedClassNames} disabled:bg-sunken`,
-  secondary: `border-rule-strong hover:bg-sunken ${pressedClassNames}`,
-  quiet: `underline underline-offset-3 hover:bg-sunken ${pressedClassNames} disabled:border-transparent`,
-  destructive: 'border-accent text-accent hover:bg-raised active:bg-accent active:text-on-accent',
-}
-
-const sizeClassNames = {
-  md: 'h-11 px-6',
-  sm: 'h-11 px-4 md:h-8',
-}
-
-// Button is the one button style source. Only one primary (vermilion) element belongs on a screen.
+// Button is a <button> in one of the shared button styles (internal/buttonClassName). Only one primary (vermilion) element belongs on a screen.
 export function Button({
   variant = 'secondary',
   size = 'md',
@@ -54,16 +39,7 @@ export function Button({
       aria-busy={isLoading || undefined}
       aria-disabled={isLoading || undefined}
       onClick={handleClick}
-      className={mergeClassNames(
-        'type-body-strong relative inline-flex cursor-pointer items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-ds border border-transparent text-ink',
-        'disabled:cursor-not-allowed disabled:border-rule disabled:bg-transparent disabled:text-ink-2',
-        variantClassNames[variant],
-        sizeClassNames[size],
-        variant === 'quiet' && 'px-4',
-        fullWidth && 'w-full',
-        isLoading && 'cursor-progress',
-        className,
-      )}
+      className={buttonClassName({ variant, size, fullWidth, isLoading }, className)}
       {...props}
     >
       {icon && <Icon name={icon} />}

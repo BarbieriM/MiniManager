@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/BarbieriM/MiniManager/api/internal/features/auth"
+	"github.com/BarbieriM/MiniManager/api/internal/features/miniatures"
 	"github.com/BarbieriM/MiniManager/api/internal/features/users"
 	platformauth "github.com/BarbieriM/MiniManager/api/internal/platform/auth"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/db/dbtest"
@@ -50,8 +51,14 @@ func newTestServer(t *testing.T) testServer {
 	writeFile(t, webDir+"/assets/app.js", "console.log('app')")
 
 	return testServer{
-		handler: newHandler(handlerDeps{auth: authService, webDir: webDir}),
-		pool:    pool,
+		handler: newHandler(handlerDeps{
+			auth:         authService,
+			users:        userService,
+			miniatures:   miniatures.NewService(pool, userService, time.Now),
+			accessTokens: accessTokens,
+			webDir:       webDir,
+		}),
+		pool: pool,
 	}
 }
 

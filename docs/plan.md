@@ -39,7 +39,7 @@ Seven features are planned: four for the MVP and three for later.
 | Size (Tiny to Gargantuan) | yes | Multi-select |
 | CR range | yes | Min and max; minis without CR are excluded only when this is set |
 | Owner | yes | Needed because the collection is shared |
-| Paint status | yes | Pre-painted, hand-painted, not painted |
+| Paint status | yes | Pre-painted, hand-painted, unpainted |
 | Tags | yes | Match any or match all; covers faction, weapon and armor for now |
 | Quantity owned (at least N) | yes | Groundwork for the encounter picker |
 | Storage location | v1.1 | Free text in the MVP, becomes a filter once values settle |
@@ -161,6 +161,7 @@ Go removes a library from `go.mod` when no code imports it, so each Go library i
 | `github.com/golang-jwt/jwt/v5` | Access tokens | 1 |
 | `github.com/google/uuid` | uuid v7 ids | 1 |
 | `github.com/testcontainers/testcontainers-go` + `modules/postgres` | Service tests against real Postgres | 1 |
+| `golang.org/x/text` (unicode/norm) | Removes accents for `name_search` | 2 |
 | `github.com/Masterminds/squirrel` | Filter query builder | 3 |
 
 Go tools pinned with `go get -tool` and run as `go tool <name>`: `sqlc`, `goose`, `staticcheck`, `air`.
@@ -290,7 +291,7 @@ The lockout (Card 2 rule 3) is not stored on `users`; see **login\_failures** be
 | size | enum `creature_size` (tiny to gargantuan) | enum order = size order, so sorting works |
 | challenge\_rating | numeric(5,3) null | CHECK value in the 5e CR list |
 | quantity | smallint | CHECK 1 to 999 |
-| paint\_status | enum `paint_status` | pre\_painted, hand\_painted, not\_painted |
+| paint\_status | enum `paint_status` | pre\_painted, hand\_painted, unpainted |
 | tags | text\[\] default '{}' | CHECK cardinality ≤ 20 |
 | storage\_location | varchar(60) null |  |
 | manufacturer | varchar(60) null |  |
@@ -466,7 +467,7 @@ The registry ANDs this filter with the others automatically, because the list qu
 | 1 | Learning Go slows the MVP until momentum is lost | First milestone is tiny (deploy, seed admin, log in). If it takes much longer than planned, switch the backend to NestJS; the SPA, database and API contract do not change |
 | 2 | Nobody enters their 300+ minis, so the catalog stays empty | Each owner enters their own; a quick-add form needs only name, type and size; pull CSV import forward if a spreadsheet exists |
 | 3 | Free-tier limits change or are exceeded (database size, image credits, billing) | No card on file, so nothing can be billed; uptime ping for cold starts; resized photos, provider code isolated in `platform/`, regular export once Card 9 ships |
-| 4 | Security mistakes in home-made auth | Standard libraries (argon2id, a maintained JWT library), tests for every Card 2 rule, an OWASP checklist in ADR 0003 |
+| 4 | Security mistakes in home-made auth | Standard libraries (argon2id, a maintained JWT library), tests for every Card 2 rule, an OWASP checklist in a future ADR |
 | 5 | Messy tags ("goblin", "Goblins", "goblinoid") make filters unreliable | Lower-casing, tag autocomplete from `GET /tags`, an Admin "merge tags" tool and custom fields in v1.1 |
 
 ## Phased roadmap

@@ -34,7 +34,12 @@ export function LoginPage(): ReactElement {
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } })
 
-  if (auth.status === 'loggedIn') return <Navigate to="/" replace />
+  // Where to go after logging in: the page (and its query) RequireAuth sent the User away from.
+  const fromState = (location.state as { from?: string } | null)?.from
+  const destination = fromState && !fromState.startsWith('/login') ? fromState : '/'
+
+  // Also reached right after a successful login, when the Session state changes before navigate runs.
+  if (auth.status === 'loggedIn') return <Navigate to={destination} replace />
 
   // The lock is per email, so typing another email re-enables the button.
   function clearLock(): void {
@@ -46,8 +51,7 @@ export function LoginPage(): ReactElement {
     setFailure(null)
     try {
       await auth.logIn(values.email, values.password)
-      const from = (location.state as { from?: string } | null)?.from
-      navigate(from && from !== '/login' ? from : '/', { replace: true })
+      navigate(destination, { replace: true })
     } catch (error) {
       setFailure(
         error instanceof ApiProblem

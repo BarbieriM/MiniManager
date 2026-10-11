@@ -2,6 +2,7 @@ package users_test
 
 import (
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 
@@ -103,5 +104,33 @@ func TestCard1_SeedAcceptsTheLimitsThemselves(t *testing.T) {
 	})
 	if err != nil || !created {
 		t.Fatalf("CreateAdmin = %v, %v; want a created Admin at the 72-character and 2-character limits", created, err)
+	}
+}
+
+func TestCard4_Rule4_OwnerOptionsListActiveUsersByName(t *testing.T) {
+	pool := dbtest.NewDatabase(t)
+	service := users.NewService(pool)
+	if _, err := service.CreateAdmin(t.Context(), users.NewAdmin{Email: "mateus@example.com", Password: "correct horse", DisplayName: "Mateus"}); err != nil {
+		t.Fatalf("CreateAdmin: %v", err)
+	}
+	for _, name := range []string{"Rafa", "Ana"} {
+		if _, err := pool.Exec(t.Context(),
+			"INSERT INTO users (id, email, password_hash, display_name, role, active) VALUES (gen_random_uuid(), $1, 'x', $2, 'member', $3)",
+			strings.ToLower(name)+"@example.com", name, name != "Rafa"); err != nil {
+			t.Fatalf("insert %s: %v", name, err)
+		}
+	}
+
+	options, err := service.ListActive(t.Context())
+
+	if err != nil {
+		t.Fatalf("ListActive: %v", err)
+	}
+	var names []string
+	for _, user := range options {
+		names = append(names, user.DisplayName)
+	}
+	if want := []string{"Ana", "Mateus"}; !slices.Equal(names, want) {
+		t.Errorf("names = %q, want %q (Rafa is deactivated)", names, want)
 	}
 }

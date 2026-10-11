@@ -5,61 +5,10 @@
 package auth
 
 import (
-	"database/sql/driver"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
-
-type userRole string
-
-const (
-	userRoleAdmin  userRole = "admin"
-	userRoleMember userRole = "member"
-)
-
-func (e *userRole) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = userRole(s)
-	case string:
-		*e = userRole(s)
-	default:
-		return fmt.Errorf("unsupported scan type for userRole: %T", src)
-	}
-	return nil
-}
-
-type NulluserRole struct {
-	userRole userRole
-	Valid    bool // Valid is true if userRole is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NulluserRole) Scan(value interface{}) error {
-	if value == nil {
-		ns.userRole, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.userRole.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NulluserRole) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.userRole), nil
-}
-
-type LoginFailure struct {
-	ID        uuid.UUID
-	Email     string
-	FailedAt  time.Time
-	CreatedAt time.Time
-}
 
 type RefreshToken struct {
 	ID         uuid.UUID
@@ -71,15 +20,4 @@ type RefreshToken struct {
 	ReplacedBy *uuid.UUID
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
-}
-
-type userRow struct {
-	ID           uuid.UUID
-	Email        string
-	PasswordHash string
-	DisplayName  string
-	Role         userRole
-	Active       bool
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
 }

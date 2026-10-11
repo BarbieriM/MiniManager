@@ -54,25 +54,6 @@ func (ns NulluserRole) Value() (driver.Value, error) {
 	return string(ns.userRole), nil
 }
 
-type LoginFailure struct {
-	ID        uuid.UUID
-	Email     string
-	FailedAt  time.Time
-	CreatedAt time.Time
-}
-
-type RefreshToken struct {
-	ID         uuid.UUID
-	UserID     uuid.UUID
-	SessionID  uuid.UUID
-	TokenHash  string
-	ExpiresAt  time.Time
-	RevokedAt  *time.Time
-	ReplacedBy *uuid.UUID
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-}
-
 type userRow struct {
 	ID           uuid.UUID
 	Email        string

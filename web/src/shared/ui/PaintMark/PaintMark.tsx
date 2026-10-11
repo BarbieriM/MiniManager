@@ -10,7 +10,7 @@ type PaintMarkProps = {
 const markColorByStatus: Record<PaintStatus, string> = {
   hand_painted: 'text-hand-painted',
   pre_painted: 'text-pre-painted',
-  not_painted: 'text-not-painted',
+  unpainted: 'text-unpainted',
 }
 
 // The mark is drawn in SVG: filled, half-filled or an empty outline, so the status is not colour alone.

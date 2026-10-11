@@ -30,8 +30,9 @@ test:
 	cd api && go test ./...
 	cd web && corepack yarn test
 
-## lint: go vet, staticcheck, gofmt check, then oxlint and the TypeScript check
+## lint: sqlc diff (generated code up to date), go vet, staticcheck, gofmt check, then oxlint and the TypeScript check
 lint:
+	cd api && go tool sqlc diff
 	cd api && go vet ./...
 	cd api && go tool staticcheck ./...
 	@unformatted="$$(cd api && gofmt -l .)"; \
