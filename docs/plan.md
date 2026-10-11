@@ -140,6 +140,7 @@ mini-manager/
       app/                    router, providers, layout
       features/
         auth/  invites/  profile/  members/  miniatures/  filters/  photos/
+          pages/  components/  api/  lib/   (each feature, split by kind; see docs/context.md)
       shared/                 api client, UI kit, form helpers
   docs/
     adr/                      0001-go-backend.md, 0002-postgres.md ...
