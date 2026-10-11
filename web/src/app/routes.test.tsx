@@ -1,10 +1,9 @@
-import { render, screen, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { jsonResponse } from '../test/jsonResponse'
+import { renderAppAt } from '../test/renderAppAt'
 import { stubFetch } from '../test/stubFetch'
-import { routes } from './routes'
 
 const sessionExpired = { type: 'about:blank', title: 'Unauthorized', status: 401, detail: 'Your session has ended. Log in again.' }
 
@@ -14,9 +13,9 @@ const mateusSession = {
   user: { id: '0199a8f2-0000-7000-8000-000000000001', displayName: 'Mateus Barbieri', role: 'admin' },
 }
 
-function renderAppAt(path: string): void {
-  render(<RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} />)
-}
+// emptyCatalog answers the Catalog's list request, which every logged-in landing on / makes.
+const emptyCatalog = (): Response => jsonResponse(200, { items: [], total: 0, page: 1, pageSize: 24 })
+
 
 describe('app routes', () => {
   afterEach(() => {
@@ -32,7 +31,7 @@ describe('app routes', () => {
   })
 
   it('card 2 acceptance criterion 1: a reload with a valid refresh cookie lands on the catalog, still logged in', async () => {
-    stubFetch({ 'POST /api/v1/auth/refresh': () => jsonResponse(200, mateusSession) })
+    stubFetch({ 'POST /api/v1/auth/refresh': () => jsonResponse(200, mateusSession), 'GET /api/v1/miniatures': emptyCatalog })
 
     renderAppAt('/')
 
@@ -42,7 +41,8 @@ describe('app routes', () => {
 
   it('retries a refresh refused with 401 once, for two tabs refreshing at the same moment', async () => {
     let attempts = 0
-    const fetchMock = stubFetch({
+    stubFetch({
+      'GET /api/v1/miniatures': emptyCatalog,
       'POST /api/v1/auth/refresh': () => {
         attempts += 1
         return attempts === 1 ? jsonResponse(401, sessionExpired) : jsonResponse(200, mateusSession)
@@ -52,11 +52,12 @@ describe('app routes', () => {
     renderAppAt('/')
 
     expect(await screen.findByRole('heading', { name: 'Catalog' })).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(attempts).toBe(2)
   })
 
   it('logs in and lands on the catalog', async () => {
     stubFetch({
+      'GET /api/v1/miniatures': emptyCatalog,
       'POST /api/v1/auth/refresh': () => jsonResponse(401, sessionExpired),
       'POST /api/v1/auth/login': async (request) => {
         expect(await request.json()).toEqual({ email: 'mateus@example.com', password: 'correct horse' })
@@ -74,6 +75,7 @@ describe('app routes', () => {
 
   it('card 2 rule 6: logging out revokes the Session and returns to the login screen', async () => {
     const fetchMock = stubFetch({
+      'GET /api/v1/miniatures': emptyCatalog,
       'POST /api/v1/auth/refresh': () => jsonResponse(200, mateusSession),
       'POST /api/v1/auth/logout': () => new Response(null, { status: 204 }),
     })
@@ -87,5 +89,25 @@ describe('app routes', () => {
 
     expect(await screen.findByRole('heading', { name: 'Log in' })).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/auth/logout', expect.objectContaining({ method: 'POST' }))
+  })
+
+  it('returns to the page and query that needed the login', async () => {
+    const requestedPages: (string | null)[] = []
+    stubFetch({
+      'POST /api/v1/auth/refresh': () => jsonResponse(401, sessionExpired),
+      'POST /api/v1/auth/login': () => jsonResponse(200, mateusSession),
+      'GET /api/v1/miniatures': (request) => {
+        requestedPages.push(new URL(request.url).searchParams.get('page'))
+        return emptyCatalog()
+      },
+    })
+    renderAppAt('/?page=2')
+
+    await userEvent.type(await screen.findByLabelText('Email'), 'mateus@example.com')
+    await userEvent.type(screen.getByLabelText('Password'), 'correct horse')
+    await userEvent.click(screen.getByRole('button', { name: 'Log in' }))
+
+    expect(await screen.findByRole('heading', { name: 'Catalog' })).toBeInTheDocument()
+    expect(requestedPages).toEqual(['2'])
   })
 })

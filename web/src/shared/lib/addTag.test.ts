@@ -24,6 +24,13 @@ describe('card 5 rule 3: addTag', () => {
     expect(addTag([], 'a'.repeat(31)).ok).toBe(false)
   })
 
+  it('counts characters the way the API does, so 30 emoji get the format message, not the length one', () => {
+    expect(addTag([], '🐉'.repeat(30))).toEqual({
+      ok: false,
+      message: 'Use letters, numbers, - or _ in tags, with an optional namespace like faction:drow.',
+    })
+  })
+
   it('allows at most 20 tags', () => {
     const twentyTags = Array.from({ length: 20 }, (_, index) => `tag-${index}`)
     expect(addTag(twentyTags, 'one-more')).toEqual({ ok: false, message: 'A miniature can have at most 20 tags.' })

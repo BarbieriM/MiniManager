@@ -2,10 +2,11 @@ import type { ReactElement } from 'react'
 import { Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../features/auth/useAuth'
 import { initialsFromDisplayName } from '../shared/lib/initialsFromDisplayName'
-import { AppBar, Button, MobileHeader } from '../shared/ui'
+import { AppBar } from '../shared/ui'
 
-// AppShell frames every logged-in screen: the desktop app bar, the phone header and the page.
-// Until Profile exists (Card 3), Log out on phones sits in the header instead of the Profile list.
+// AppShell frames every logged-in screen with the desktop app bar. The phone header and bottom bar belong to each
+// screen, because whether they show depends on the screen (forms hide the bottom bar; details hide it for those who
+// can change the miniature).
 export function AppShell(): ReactElement | null {
   const auth = useAuth()
   const navigate = useNavigate()
@@ -22,14 +23,7 @@ export function AppShell(): ReactElement | null {
     <div className="flex min-h-dvh flex-col">
       {/* Members arrives with roles and invites in build step 4, so the link stays hidden until then. */}
       <AppBar user={user} isAdmin={false} onLogout={() => void logOut()} />
-      <MobileHeader
-        action={
-          <Button variant="quiet" onClick={() => void logOut()}>
-            Log out
-          </Button>
-        }
-      />
-      <main className="flex-1">
+      <main className="flex flex-1 flex-col">
         <Outlet />
       </main>
     </div>
