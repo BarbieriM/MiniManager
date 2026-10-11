@@ -1,0 +1,68 @@
+# Lint and test, then build the image, on every push and PR; on main, ask Render to deploy it.
+# Migrations are never applied here: Mateus runs `make migrate` against Neon before merging (ADR 0002).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install web dependencies
+        working-directory: web
+        run: |
+          corepack enable
+          yarn install --immutable
+
+      - name: Lint
+        run: make lint
+
+      # GitHub's Ubuntu runners have Docker, so testcontainers starts a real Postgres 18 for the Go tests.
+      - name: Test
+        run: make test
+
+  image:
+    name: Build image
+    needs: [check]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the Docker image
+        run: docker build -t mini-manager:${{ github.sha }} .
+
+  deploy:
+    name: Deploy to Render
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [image]
+    runs-on: ubuntu-latest
+    steps:
+      # Render builds the same Dockerfile itself; auto-deploy is off there, so this hook is the only trigger.
+      - name: Trigger the Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          # No secret yet means hosting is not set up; skip instead of failing the run.
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "::notice::RENDER_DEPLOY_HOOK_URL is not set, so nothing was deployed."
+            exit 0
+          fi
+          curl --fail --silent --show-error --request POST "$RENDER_DEPLOY_HOOK_URL" > /dev/null

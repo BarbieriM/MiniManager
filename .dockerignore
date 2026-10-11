@@ -1,0 +1,9 @@
+.git
+.env
+.env.*
+**/node_modules
+web/dist
+web/.yarn/install-state.gz
+api/tmp
+docs
+specs
