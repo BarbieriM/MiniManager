@@ -256,9 +256,8 @@ The database choice (PostgreSQL) is covered in section 4 of `plan.md`.
 | owner | multi-select of users | yes |
 | paintStatus | multi-select | yes |
 | tags | multi-select, with "match any" or "match all" | yes |
-| minQuantity | integer | yes |
 | storageLocation, manufacturer | multi-select | later |
-| sort | name, cr, newest, quantity (asc or desc) | yes |
+| sort | name, challengeRating, createdAt (newest), size; each ascending or descending (a leading `-` means descending) | yes |
 
 **Business rules**
 
@@ -272,6 +271,12 @@ The database choice (PostgreSQL) is covered in section 4 of `plan.md`.
 8. Unknown filter parameters are ignored; invalid values for known filters return 400 with the field name.
 9. Filtering and paging happen on the server, not in the browser.
 10. Each filter is defined once in a filter registry, so the UI control, the URL parameter, the validation and the database query come from one definition.
+
+*Clarified 2026-10-11:* the minimum-quantity filter and sorting by quantity were dropped; sorting by size was added
+(the size enum is in size order for this). A multi-select repeats its parameter once per value
+(`?size=small&size=medium`); owners are sent by user id; `tagMatch=all` switches tags to "match all" (default any).
+The options in each filter show a count of matching minis in the whole Catalog; counts that follow the other active
+filters ("faceted") are a later change.
 
 **Validations and error messages**
 
