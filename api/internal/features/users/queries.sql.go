@@ -19,11 +19,11 @@ RETURNING id, email, password_hash, display_name, role, active, created_at, upda
 `
 
 type CreateUserIfEmailIsFreeParams struct {
-	ID           uuid.UUID
-	Email        string
-	PasswordHash string
-	DisplayName  string
-	Role         userRole
+	ID           uuid.UUID `db:"id"`
+	Email        string    `db:"email"`
+	PasswordHash string    `db:"password_hash"`
+	DisplayName  string    `db:"display_name"`
+	Role         userRole  `db:"role"`
 }
 
 // CreateUserIfEmailIsFree returns no row when the email already belongs to a User.

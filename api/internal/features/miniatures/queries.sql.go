@@ -34,21 +34,21 @@ RETURNING id, owner_id, created_by, name, name_search, creature_type, size, chal
 `
 
 type CreateMiniatureParams struct {
-	ID              uuid.UUID
-	OwnerID         uuid.UUID
-	CreatedBy       uuid.UUID
-	Name            string
-	NameSearch      string
-	CreatureType    CreatureType
-	Size            CreatureSize
-	ChallengeRating *float64
-	Quantity        int16
-	PaintStatus     PaintStatus
-	Tags            []string
-	StorageLocation *string
-	Manufacturer    *string
-	Notes           *string
-	CreatedAt       time.Time
+	ID              uuid.UUID    `db:"id"`
+	OwnerID         uuid.UUID    `db:"owner_id"`
+	CreatedBy       uuid.UUID    `db:"created_by"`
+	Name            string       `db:"name"`
+	NameSearch      string       `db:"name_search"`
+	CreatureType    CreatureType `db:"creature_type"`
+	Size            CreatureSize `db:"size"`
+	ChallengeRating *float64     `db:"challenge_rating"`
+	Quantity        int16        `db:"quantity"`
+	PaintStatus     PaintStatus  `db:"paint_status"`
+	Tags            []string     `db:"tags"`
+	StorageLocation *string      `db:"storage_location"`
+	Manufacturer    *string      `db:"manufacturer"`
+	Notes           *string      `db:"notes"`
+	CreatedAt       time.Time    `db:"created_at"`
 }
 
 func (q *Queries) CreateMiniature(ctx context.Context, arg CreateMiniatureParams) (miniatureRow, error) {
@@ -137,205 +137,6 @@ func (q *Queries) GetMiniature(ctx context.Context, id uuid.UUID) (miniatureRow,
 	return i, err
 }
 
-const listMiniaturesByChallengeRating = `-- name: ListMiniaturesByChallengeRating :many
-SELECT id, owner_id, created_by, name, name_search, creature_type, size, challenge_rating, quantity, paint_status, tags, storage_location, manufacturer, notes, system_stats, custom_fields, version, created_at, updated_at FROM miniatures ORDER BY challenge_rating NULLS LAST, name_search, id LIMIT $1 OFFSET $2
-`
-
-type ListMiniaturesByChallengeRatingParams struct {
-	Limit  int32
-	Offset int32
-}
-
-func (q *Queries) ListMiniaturesByChallengeRating(ctx context.Context, arg ListMiniaturesByChallengeRatingParams) ([]miniatureRow, error) {
-	rows, err := q.db.Query(ctx, listMiniaturesByChallengeRating, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []miniatureRow
-	for rows.Next() {
-		var i miniatureRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.OwnerID,
-			&i.CreatedBy,
-			&i.Name,
-			&i.NameSearch,
-			&i.CreatureType,
-			&i.Size,
-			&i.ChallengeRating,
-			&i.Quantity,
-			&i.PaintStatus,
-			&i.Tags,
-			&i.StorageLocation,
-			&i.Manufacturer,
-			&i.Notes,
-			&i.SystemStats,
-			&i.CustomFields,
-			&i.Version,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listMiniaturesByName = `-- name: ListMiniaturesByName :many
-
-SELECT id, owner_id, created_by, name, name_search, creature_type, size, challenge_rating, quantity, paint_status, tags, storage_location, manufacturer, notes, system_stats, custom_fields, version, created_at, updated_at FROM miniatures ORDER BY name_search, id LIMIT $1 OFFSET $2
-`
-
-type ListMiniaturesByNameParams struct {
-	Limit  int32
-	Offset int32
-}
-
-// The list queries differ only in their ORDER BY; ties end on id so paging is stable (Card 5 rule 10).
-// Step 3's filters replace them with one built query.
-func (q *Queries) ListMiniaturesByName(ctx context.Context, arg ListMiniaturesByNameParams) ([]miniatureRow, error) {
-	rows, err := q.db.Query(ctx, listMiniaturesByName, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []miniatureRow
-	for rows.Next() {
-		var i miniatureRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.OwnerID,
-			&i.CreatedBy,
-			&i.Name,
-			&i.NameSearch,
-			&i.CreatureType,
-			&i.Size,
-			&i.ChallengeRating,
-			&i.Quantity,
-			&i.PaintStatus,
-			&i.Tags,
-			&i.StorageLocation,
-			&i.Manufacturer,
-			&i.Notes,
-			&i.SystemStats,
-			&i.CustomFields,
-			&i.Version,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listMiniaturesBySize = `-- name: ListMiniaturesBySize :many
-SELECT id, owner_id, created_by, name, name_search, creature_type, size, challenge_rating, quantity, paint_status, tags, storage_location, manufacturer, notes, system_stats, custom_fields, version, created_at, updated_at FROM miniatures ORDER BY size, name_search, id LIMIT $1 OFFSET $2
-`
-
-type ListMiniaturesBySizeParams struct {
-	Limit  int32
-	Offset int32
-}
-
-func (q *Queries) ListMiniaturesBySize(ctx context.Context, arg ListMiniaturesBySizeParams) ([]miniatureRow, error) {
-	rows, err := q.db.Query(ctx, listMiniaturesBySize, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []miniatureRow
-	for rows.Next() {
-		var i miniatureRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.OwnerID,
-			&i.CreatedBy,
-			&i.Name,
-			&i.NameSearch,
-			&i.CreatureType,
-			&i.Size,
-			&i.ChallengeRating,
-			&i.Quantity,
-			&i.PaintStatus,
-			&i.Tags,
-			&i.StorageLocation,
-			&i.Manufacturer,
-			&i.Notes,
-			&i.SystemStats,
-			&i.CustomFields,
-			&i.Version,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listMiniaturesNewestFirst = `-- name: ListMiniaturesNewestFirst :many
-SELECT id, owner_id, created_by, name, name_search, creature_type, size, challenge_rating, quantity, paint_status, tags, storage_location, manufacturer, notes, system_stats, custom_fields, version, created_at, updated_at FROM miniatures ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2
-`
-
-type ListMiniaturesNewestFirstParams struct {
-	Limit  int32
-	Offset int32
-}
-
-func (q *Queries) ListMiniaturesNewestFirst(ctx context.Context, arg ListMiniaturesNewestFirstParams) ([]miniatureRow, error) {
-	rows, err := q.db.Query(ctx, listMiniaturesNewestFirst, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []miniatureRow
-	for rows.Next() {
-		var i miniatureRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.OwnerID,
-			&i.CreatedBy,
-			&i.Name,
-			&i.NameSearch,
-			&i.CreatureType,
-			&i.Size,
-			&i.ChallengeRating,
-			&i.Quantity,
-			&i.PaintStatus,
-			&i.Tags,
-			&i.StorageLocation,
-			&i.Manufacturer,
-			&i.Notes,
-			&i.SystemStats,
-			&i.CustomFields,
-			&i.Version,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const updateMiniature = `-- name: UpdateMiniature :one
 UPDATE miniatures SET
     owner_id = $3, name = $4, name_search = $5, creature_type = $6, size = $7, challenge_rating = $8,
@@ -346,21 +147,21 @@ RETURNING id, owner_id, created_by, name, name_search, creature_type, size, chal
 `
 
 type UpdateMiniatureParams struct {
-	ID              uuid.UUID
-	Version         int32
-	OwnerID         uuid.UUID
-	Name            string
-	NameSearch      string
-	CreatureType    CreatureType
-	Size            CreatureSize
-	ChallengeRating *float64
-	Quantity        int16
-	PaintStatus     PaintStatus
-	Tags            []string
-	StorageLocation *string
-	Manufacturer    *string
-	Notes           *string
-	UpdatedAt       time.Time
+	ID              uuid.UUID    `db:"id"`
+	Version         int32        `db:"version"`
+	OwnerID         uuid.UUID    `db:"owner_id"`
+	Name            string       `db:"name"`
+	NameSearch      string       `db:"name_search"`
+	CreatureType    CreatureType `db:"creature_type"`
+	Size            CreatureSize `db:"size"`
+	ChallengeRating *float64     `db:"challenge_rating"`
+	Quantity        int16        `db:"quantity"`
+	PaintStatus     PaintStatus  `db:"paint_status"`
+	Tags            []string     `db:"tags"`
+	StorageLocation *string      `db:"storage_location"`
+	Manufacturer    *string      `db:"manufacturer"`
+	Notes           *string      `db:"notes"`
+	UpdatedAt       time.Time    `db:"updated_at"`
 }
 
 // UpdateMiniature applies only when the stored version still matches (Card 5 rule 7); no row means a conflict

@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/BarbieriM/MiniManager/api/internal/features/users"
+	"github.com/BarbieriM/MiniManager/api/internal/platform/textsearch"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/validation"
 )
 
@@ -30,12 +31,14 @@ type Service struct {
 	pool    *pgxpool.Pool
 	queries *Queries
 	users   *users.Service
+	filters catalogFilters
 	now     func() time.Time
 }
 
-// NewService returns a Service. now is time.Now in production and a hand-moved clock in tests.
-func NewService(pool *pgxpool.Pool, userService *users.Service, now func() time.Time) *Service {
-	return &Service{pool: pool, queries: New(pool), users: userService, now: now}
+// NewService returns a Service. catalogFilters is the filter registry's service (Card 6); now is time.Now in
+// production and a hand-moved clock in tests.
+func NewService(pool *pgxpool.Pool, userService *users.Service, catalogFilters catalogFilters, now func() time.Time) *Service {
+	return &Service{pool: pool, queries: New(pool), users: userService, filters: catalogFilters, now: now}
 }
 
 // Owner is the User a Miniature belongs to, as the Catalog shows them.
@@ -99,7 +102,7 @@ func (s *Service) Create(ctx context.Context, actor users.User, input Input) (Mi
 		OwnerID:         ownerID,
 		CreatedBy:       actor.ID,
 		Name:            input.Name,
-		NameSearch:      nameSearch(input.Name),
+		NameSearch:      textsearch.Fold(input.Name),
 		CreatureType:    CreatureType(input.CreatureType),
 		Size:            CreatureSize(input.Size),
 		ChallengeRating: input.ChallengeRating,
@@ -140,7 +143,7 @@ func (s *Service) Update(ctx context.Context, actor users.User, id uuid.UUID, ve
 		Version:         int32(version),
 		OwnerID:         ownerID,
 		Name:            input.Name,
-		NameSearch:      nameSearch(input.Name),
+		NameSearch:      textsearch.Fold(input.Name),
 		CreatureType:    CreatureType(input.CreatureType),
 		Size:            CreatureSize(input.Size),
 		ChallengeRating: input.ChallengeRating,

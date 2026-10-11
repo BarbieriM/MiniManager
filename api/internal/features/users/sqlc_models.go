@@ -55,12 +55,12 @@ func (ns NulluserRole) Value() (driver.Value, error) {
 }
 
 type userRow struct {
-	ID           uuid.UUID
-	Email        string
-	PasswordHash string
-	DisplayName  string
-	Role         userRole
-	Active       bool
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID           uuid.UUID `db:"id"`
+	Email        string    `db:"email"`
+	PasswordHash string    `db:"password_hash"`
+	DisplayName  string    `db:"display_name"`
+	Role         userRole  `db:"role"`
+	Active       bool      `db:"active"`
+	CreatedAt    time.Time `db:"created_at"`
+	UpdatedAt    time.Time `db:"updated_at"`
 }

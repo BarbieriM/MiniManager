@@ -90,6 +90,8 @@ type pageResponse struct {
 	Total    int                 `json:"total"`
 	Page     int                 `json:"page"`
 	PageSize int                 `json:"pageSize"`
+	// CatalogTotal counts every Miniature, for "48 of 312 minis" (Card 6 rule 7).
+	CatalogTotal int `json:"catalogTotal"`
 }
 
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
@@ -107,14 +109,17 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 	for i, miniature := range page.Items {
 		items[i] = toResponse(miniature)
 	}
-	httpx.WriteJSON(w, http.StatusOK, pageResponse{Items: items, Total: page.Total, Page: page.Page, PageSize: page.PageSize})
+	httpx.WriteJSON(w, http.StatusOK, pageResponse{
+		Items: items, Total: page.Total, Page: page.Page, PageSize: page.PageSize, CatalogTotal: page.CatalogTotal,
+	})
 }
 
-// parseListOptions reads page, pageSize and sort from the query; the service checks their values (Card 5 rule
-// 10). Unknown parameters are ignored, and text that is not a whole number is a problem here.
+// parseListOptions reads page, pageSize, sort and the filters from the query; the service checks their values
+// (Cards 5 and 6). Unknown parameters are ignored, and text that is not a whole number is a problem here.
 func parseListOptions(r *http.Request) (ListOptions, validation.Errors) {
 	query := r.URL.Query()
-	options := ListOptions{Sort: Sort(query.Get("sort"))}
+	// The filter registry reads the filter parameters it knows from the same query (Card 6).
+	options := ListOptions{Sort: Sort(query.Get("sort")), Filters: query}
 	var problems validation.Errors
 	if text := query.Get("page"); text != "" {
 		// An explicit 0 would read as "not given" in the service, so it is refused here.

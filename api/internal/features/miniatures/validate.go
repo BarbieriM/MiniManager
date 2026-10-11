@@ -5,6 +5,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/BarbieriM/MiniManager/api/internal/features/challengerating"
+	"github.com/BarbieriM/MiniManager/api/internal/features/tags"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/validation"
 )
 
@@ -27,15 +29,6 @@ var (
 	paintStatuses = []string{"pre_painted", "hand_painted", "unpainted"}
 )
 
-// isOfficialChallengeRating reports whether rating is a 5e Challenge Rating: 0, 1/8, 1/4, 1/2 or 1 to 30.
-func isOfficialChallengeRating(rating float64) bool {
-	switch rating {
-	case 0, 0.125, 0.25, 0.5:
-		return true
-	}
-	return rating >= 1 && rating <= 30 && rating == float64(int(rating))
-}
-
 // normalized returns input with Card 5's clean-ups and defaults applied: trimmed text, quantity 1, Unpainted.
 func (input Input) normalized() Input {
 	input.Name = strings.TrimSpace(input.Name)
@@ -49,7 +42,7 @@ func (input Input) normalized() Input {
 		one := 1
 		input.Quantity = &one
 	}
-	input.Tags = normalizeTags(input.Tags)
+	input.Tags = tags.NormalizeAll(input.Tags)
 	return input
 }
 
@@ -71,13 +64,13 @@ func (input Input) validate() error {
 	if !slices.Contains(paintStatuses, input.PaintStatus) {
 		problems.Add("paintStatus", "Pick a paint status.")
 	}
-	if input.ChallengeRating != nil && !isOfficialChallengeRating(*input.ChallengeRating) {
+	if input.ChallengeRating != nil && !challengerating.IsOfficial(*input.ChallengeRating) {
 		problems.Add("challengeRating", "Pick a valid Challenge Rating.")
 	}
 	if input.Quantity != nil && (*input.Quantity < minQuantity || *input.Quantity > maxQuantity) {
 		problems.Add("quantity", quantityMessage)
 	}
-	for _, message := range tagProblems(input.Tags) {
+	for _, message := range tags.Problems(input.Tags) {
 		problems.Add("tags", message)
 	}
 	if utf8.RuneCountInString(input.StorageLocation) > maxShortText {

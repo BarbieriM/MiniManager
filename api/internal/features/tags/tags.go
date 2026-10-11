@@ -1,4 +1,6 @@
-package miniatures
+// Package tags holds Card 5 rule 3: how a typed tag is normalized and when it is refused. The miniatures form and the
+// tag filter both use it, so a tag means the same thing everywhere.
+package tags
 
 import (
 	"regexp"
@@ -29,20 +31,20 @@ var (
 	tagPattern = regexp.MustCompile(`^[a-z0-9]+(?:[-_][a-z0-9]+)*(?::[a-z0-9]+(?:[-_][a-z0-9]+)*)?$`)
 )
 
-// normalizeTag trims and lower-cases, drops spaces around the namespace colon and turns other spaces into dashes:
+// Normalize trims and lower-cases, drops spaces around the namespace colon and turns other spaces into dashes:
 // "Faction : Drow" → "faction:drow", "Goblin Boss" → "goblin-boss".
-func normalizeTag(tag string) string {
+func Normalize(tag string) string {
 	tag = strings.ToLower(strings.TrimFunc(tag, isWhitespace))
 	tag = spacesAroundColon.ReplaceAllString(tag, ":")
 	tag = spaces.ReplaceAllString(tag, "-")
 	return repeatedDashes.ReplaceAllString(tag, "-")
 }
 
-// normalizeTags normalizes each tag and drops repeats, keeping the first one's position.
-func normalizeTags(tags []string) []string {
+// NormalizeAll normalizes each tag and drops repeats, keeping the first one's position.
+func NormalizeAll(tags []string) []string {
 	normalized := make([]string, 0, len(tags))
 	for _, tag := range tags {
-		tag = normalizeTag(tag)
+		tag = Normalize(tag)
 		if !slices.Contains(normalized, tag) {
 			normalized = append(normalized, tag)
 		}
@@ -50,8 +52,8 @@ func normalizeTags(tags []string) []string {
 	return normalized
 }
 
-// tagProblems returns the Card 5 messages that apply to normalized tags, each message once.
-func tagProblems(tags []string) []string {
+// Problems returns the Card 5 messages that apply to normalized tags, each message once.
+func Problems(tags []string) []string {
 	var messages []string
 	addOnce := func(message string) {
 		if !slices.Contains(messages, message) {
