@@ -134,7 +134,7 @@ mini-manager/
         filters/              Card 6: registry.go + one file per filter
           name.go  creature_type.go  size.go  cr.go  owner.go  paint.go  tags.go  quantity.go
         photos/               Card 7
-    migrations/               0001_init.sql, 0002_...sql (goose)
+    migrations/               00001_users_and_sessions.sql, 00002_...sql (goose)
     sqlc.yaml
   web/                        React + Vite
     src/
@@ -156,7 +156,7 @@ Go removes a library from `go.mod` when no code imports it, so each Go library i
 | Go library | Purpose | Added in build step |
 | --- | --- | --- |
 | `github.com/jackc/pgx/v5` | Postgres driver and pool | 1 |
-| `github.com/pressly/goose/v3` | Run migrations at startup and in tests | 1 |
+| `github.com/pressly/goose/v3` | Check for pending migrations at startup; apply them in tests and `make migrate` | 1 |
 | `golang.org/x/crypto` (argon2) | Password hashing | 1 |
 | `github.com/golang-jwt/jwt/v5` | Access tokens | 1 |
 | `github.com/google/uuid` | uuid v7 ids | 1 |
@@ -243,8 +243,8 @@ Every `id` is a `uuid` (v7, time-ordered). Every table has `created_at timestamp
 | display\_name | varchar(40) |  |
 | role | enum `user_role` (admin, member) |  |
 | active | boolean default true |  |
-| failed\_logins | smallint default 0 | lockout, Card 2 rule 3 |
-| locked\_until | timestamptz null |  |
+
+The lockout (Card 2 rule 3) is not stored on `users`; see **login\_failures** below and ADR 0002.
 
 **invites**
 
@@ -268,6 +268,15 @@ Every `id` is a `uuid` (v7, time-ordered). Every table has `created_at timestamp
 | expires\_at | timestamptz | 7 days or 1 hour |
 | revoked\_at / used\_at | timestamptz null |  |
 | replaced\_by | uuid null (refresh only) | detects reuse of a rotated token |
+| session\_id | uuid (refresh only) | groups every token of one Session, so reuse revokes the whole Session (ADR 0002) |
+
+**login\_failures**
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| id | uuid PK |  |
+| email | citext | no FK: unknown emails are recorded too, so the lockout reveals nothing (Card 2 rules 2 and 3) |
+| failed\_at | timestamptz | index (email, failed\_at) |
 
 **miniatures**
 
@@ -333,7 +342,7 @@ Later tables: `lists`, `list_items` (lists ↔ miniatures, many-to-many with a c
 | btree (created\_at) | "newest" sort |
 | GIN (system\_stats jsonb\_path\_ops) | added later, when a system filter exists |
 
-To be honest about scale: at 300 to 5,000 rows Postgres scans the whole table in about a millisecond, so these indexes are not needed for speed yet. Create them in migration 0001 anyway. They cost nothing at this size, and you get to learn them with `EXPLAIN`.
+To be honest about scale: at 300 to 5,000 rows Postgres scans the whole table in about a millisecond, so these indexes are not needed for speed yet. Create them in the miniatures migration anyway. They cost nothing at this size, and you get to learn them with `EXPLAIN`.
 
 ### System-specific attributes without a schema change
 
@@ -347,9 +356,9 @@ Adding Pathfinder 2e then means a validator file and a filter registry entry tha
 
 ### Migration strategy
 
-1. Use `goose` with plain SQL files in `api/migrations`, numbered and committed with the code that needs them.
+1. Use `goose` with plain SQL files in `api/migrations`, numbered and committed with the code that needs them. Each build step adds its own migration (00001 is Users and Sessions; miniatures come in step 2).
 2. CI runs every migration against a throwaway Postgres container before the tests.
-3. The deploy runs `goose up` before the new version starts. A failed migration stops the deploy.
+3. Nothing applies migrations automatically (ADR 0002). Mateus reviews each migration and runs `make migrate` himself, against Neon before merging the PR that contains it. The server and the seed refuse to start while migrations are pending, so Render keeps the previous version live.
 4. Never edit a migration that has already run. Fix forward with a new one.
 5. Renames and type changes use expand and contract: add the new column, write both, backfill, switch reads, then drop the old one in a later migration.
 6. Before a risky migration, create a Neon branch (a copy of production) and run it there first.

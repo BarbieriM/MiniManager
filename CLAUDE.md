@@ -53,20 +53,23 @@ docs/  plan.md  features.md  context.md  features/  adr/  design/{design-system,
 
 ## Commands
 
-Create these as the project grows and keep this list accurate.
-
-Until the Makefile exists: Go tools run as `go tool sqlc|goose|staticcheck|air` from `api/` (pinned in `go.mod`);
-the web app uses Yarn 4 (pinned in `web/package.json`, run through corepack): `yarn dev|build|lint|test` in `web/`.
+Keep this list accurate as the project grows. The Makefile reads `.env` (copy `.env.example`). Go tools are
+pinned in `go.mod` and run as `go tool <name>` from `api/`; the web app uses Yarn 4 through corepack (Node 22,
+`nvm use`).
 
 ```bash
-make dev          # api with live reload + vite dev server (vite proxies /api to :8080)
+make dev          # local db + api with live reload + vite dev server (vite proxies /api to :8080)
+make db           # start the local Postgres 18 from compose.yaml on port 5433 (applies no migrations)
 make test         # go test ./... (needs Docker for testcontainers) + yarn test
 make lint         # go vet, staticcheck, gofmt check, oxlint, tsc -b --noEmit
 make sqlc         # regenerate Go code from queries.sql
-make migrate-new name=add_x   # new goose migration
-make migrate      # goose up against DATABASE_URL
-make seed         # first Admin
+make migrate-new name=add_x   # new numbered goose migration
+make migrate-status           # applied and pending migrations (creates goose_db_version on a fresh db)
+make migrate      # goose up against DATABASE_URL: Mateus only, after reviewing the migration (ADR 0002)
+make seed         # first Admin from SEED_ADMIN_*: Mateus only
 ```
+
+Never run `make migrate` or `make seed` against any database yourself; write the files and let Mateus apply them.
 
 Run `make lint test` before saying a task is done, and report failures honestly.
 
