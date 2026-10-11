@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import { Outlet, useNavigate } from 'react-router'
-import { useAuth } from '../features/auth/useAuth'
+import { useAuth } from '../features/auth/lib/useAuth'
 import { initialsFromDisplayName } from '../shared/lib/initialsFromDisplayName'
 import { AppBar } from '../shared/ui'
 

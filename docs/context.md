@@ -173,10 +173,16 @@ web/src/
   test/                     Vitest setup and shared test helpers, one per file
   shared/lib/mergeClassNames.ts  clsx + tailwind-merge: joins class names, later Tailwind classes win
   shared/api/               fetch client, problem+json parsing, the slow-request tracker, TanStack Query keys
-                            (queryKeys.ts). The refresh-and-retry on 401 lives in features/auth/AuthProvider,
+                            (queryKeys.ts). The refresh-and-retry on 401 lives in features/auth/components/AuthProvider,
                             because it needs the in-memory access token (decided 2026-10-11).
   app/                      router, providers, AppShell (appbar / mobile header / bottom bar / banners)
-  features/<feature>/       pages and feature-only components; no styling primitives here
+  features/<feature>/       one feature (auth, miniatures, filters, …); no styling primitives here. Its files are
+                            split by kind, and a subfolder exists only once it has files:
+    pages/                  screens the router mounts (CatalogPage.tsx)
+    components/             pieces only this feature uses: dialogs, forms, controls (MiniatureForm.tsx)
+    api/                    talking to the server: TanStack Query hooks, request functions, request and
+                            response types (useMiniature.ts, requestLogin.ts, MiniatureListResponse.ts)
+    lib/                    plain helpers, constants and context hooks (toCatalogItem.ts, useSession.ts)
 ```
 
 ## File naming: one export per file
