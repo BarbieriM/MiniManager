@@ -273,7 +273,10 @@ Library test for behaviour (not snapshots). Keep variant styles in a `variants` 
 | `CatalogTable` | Desktop default. 44 px rows, `border-rule` between rows, `border-rule-strong` on top. Columns: cover, name, size (glyph + word), type, CR, paint, owner, qty, location, actions. Sortable headers with direction indicator. Row actions (edit, delete) appear on hover/focus **only if the policy allows** (own mini or admin). Selected row `bg-sunken`. Horizontal scroll under 1040 px. |
 | `CatalogCard` | Mobile list item: 72 px thumb, name (`type-body-strong`), base glyph, CR stamp, paint mark, owner stamp, qty; ≥ 96 px tall, whole card is the link. |
 | `GridTile` | Photo-first desktop alternative, toggled from the toolbar. |
-| `FilterRail` (desktop, 280 px) and `FilterSheet` (mobile) | Render controls from `GET /api/v1/filters` definitions (Card 6); groups collapse; active filters appear as `FilterChip`s above results with "Clear all". Chip hover for removal turns accent. |
+| `FilterRail` (desktop, 280 px) and `FilterSheet` (mobile) | Render controls from `GET /api/v1/filters` definitions (Card 6); groups collapse; active filters appear as `FilterChip`s above results with "Clear all". Chip hover for removal turns accent. `shared/ui/FilterRail` is the column frame; the phone sheet is a `Sheet`; `features/filters` draws the controls. |
+| `FilterGroup` | One filter in the rail or sheet: groups sit flush, split by a `border-rule` line; the heading (`type-label`, 44 px) has a chevron on the right and opens or closes the controls. |
+| `FilterChipRow` | Wrapping row of `FilterChip`s and "Clear all" above the results. |
+| `Toolbar` | Above the Catalog: the search, plus Filters and Sort side by side on phones. |
 | `Pagination` | "1–24 of 312" in mono, previous/next, page jump. |
 | `ResultCount` | `type-mono-lg`: "48 minis" or "48 of 312 minis". |
 | `AppBar` (desktop) | Wordmark, Catalog, Members (admins only), profile menu (Profile, Change password, Log out). h-14, ink rule below. |

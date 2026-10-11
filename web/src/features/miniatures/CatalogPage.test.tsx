@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { jsonResponse } from '../../test/jsonResponse'
@@ -87,4 +87,43 @@ describe('CatalogPage', () => {
     expect(await screen.findByText('The Catalog could not be loaded. Try again.', {}, { timeout: 6000 })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Log in' })).not.toBeInTheDocument()
   }, 10_000)
+
+  // stubListing answers the list with one Goblin and records every list query.
+  function stubListing(): URLSearchParams[] {
+    const listQueries: URLSearchParams[] = []
+    stubFetch({
+      'POST /api/v1/auth/refresh': () => jsonResponse(200, sessionFor('Ana')),
+      'GET /api/v1/filters': () => jsonResponse(200, []),
+      'GET /api/v1/miniatures': (request) => {
+        listQueries.push(new URL(request.url).searchParams)
+        return jsonResponse(200, { ...pageOf(['Goblin'], 1, 1), catalogTotal: 1 })
+      },
+    })
+    return listQueries
+  }
+
+  it('card 6 rule 4: searching updates the list after a short pause and goes back to page 1', async () => {
+    const listQueries = stubListing()
+    renderAppAt('/?page=2')
+
+    await userEvent.type(await screen.findByRole('searchbox', { name: 'Search miniatures' }), 'gob')
+
+    await vi.waitFor(() => expect(listQueries.at(-1)?.get('q')).toBe('gob'))
+    expect(listQueries.at(-1)?.has('page')).toBe(false)
+    // Typing three letters asked once more, not once per letter.
+    expect(listQueries.filter((query) => query.has('q'))).toHaveLength(1)
+  })
+
+  it('sorts from the table header and from the phone Sort select', async () => {
+    const listQueries = stubListing()
+    renderAppAt('/')
+
+    const nameHeader = await screen.findByRole('columnheader', { name: /Name/ })
+    await userEvent.click(within(nameHeader).getByRole('button'))
+    await vi.waitFor(() => expect(listQueries.at(-1)?.get('sort')).toBe('-name'))
+
+    await userEvent.click(screen.getByRole('combobox', { name: 'Sort' }))
+    await userEvent.click(screen.getByRole('option', { name: 'Newest first' }))
+    await vi.waitFor(() => expect(listQueries.at(-1)?.get('sort')).toBe('-createdAt'))
+  })
 })

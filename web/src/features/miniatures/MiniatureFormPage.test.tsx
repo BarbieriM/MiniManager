@@ -128,4 +128,18 @@ describe('MiniatureFormPage', () => {
 
     expect(await screen.findByDisplayValue('Goblin Boss')).toBeInTheDocument()
   })
+
+  it('card 6: the tag field suggests the tags already in use', async () => {
+    stubFetch({
+      'POST /api/v1/auth/refresh': () => jsonResponse(200, sessionFor('Ana')),
+      'GET /api/v1/tags': () =>
+        jsonResponse(200, { items: [{ value: 'goblinoid', label: 'goblinoid', count: 4 }, { value: 'faction:drow', label: 'faction:drow', count: 2 }], total: 2, page: 1, pageSize: 2 }),
+    })
+    renderAppAt('/minis/new')
+
+    await userEvent.type(await screen.findByRole('combobox', { name: /Tags/ }), 'gob')
+
+    expect(await screen.findByRole('option', { name: /goblinoid/ })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: /faction:drow/ })).not.toBeInTheDocument()
+  })
 })
