@@ -88,3 +88,69 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (userRow, error
 	)
 	return i, err
 }
+
+const getUsersByIDs = `-- name: GetUsersByIDs :many
+SELECT id, email, password_hash, display_name, role, active, created_at, updated_at FROM users WHERE id = ANY($1::uuid[])
+`
+
+func (q *Queries) GetUsersByIDs(ctx context.Context, ids []uuid.UUID) ([]userRow, error) {
+	rows, err := q.db.Query(ctx, getUsersByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []userRow
+	for rows.Next() {
+		var i userRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.PasswordHash,
+			&i.DisplayName,
+			&i.Role,
+			&i.Active,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActiveUsers = `-- name: ListActiveUsers :many
+SELECT id, email, password_hash, display_name, role, active, created_at, updated_at FROM users WHERE active ORDER BY display_name, id
+`
+
+func (q *Queries) ListActiveUsers(ctx context.Context) ([]userRow, error) {
+	rows, err := q.db.Query(ctx, listActiveUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []userRow
+	for rows.Next() {
+		var i userRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.PasswordHash,
+			&i.DisplayName,
+			&i.Role,
+			&i.Active,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

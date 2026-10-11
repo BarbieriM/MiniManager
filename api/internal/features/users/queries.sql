@@ -10,3 +10,9 @@ INSERT INTO users (id, email, password_hash, display_name, role)
 VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT (email) DO NOTHING
 RETURNING *;
+
+-- name: ListActiveUsers :many
+SELECT * FROM users WHERE active ORDER BY display_name, id;
+
+-- name: GetUsersByIDs :many
+SELECT * FROM users WHERE id = ANY(@ids::uuid[]);

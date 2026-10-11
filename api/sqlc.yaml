@@ -1,6 +1,51 @@
 # `make sqlc` generates Go code from each feature's queries.sql into that feature's package.
 # The schema is read from the goose migrations; sqlc skips their Down sections.
+# `make lint` (and CI) runs `sqlc diff`, which fails when the committed generated code is out of date.
 version: "2"
+
+# Settings for every package.
+overrides:
+  go:
+    # Generated row types stay unexported; each package exposes its own types (users.User, miniatures.Miniature).
+    # A rename also renames columns with that name, which is why enums keep their generated names.
+    rename:
+      user: userRow
+      user_role: userRole
+      user_role_admin: userRoleAdmin
+      user_role_member: userRoleMember
+      miniature: miniatureRow
+    # Plain Go types instead of pgtype wrappers.
+    overrides:
+      - db_type: uuid
+        go_type: github.com/google/uuid.UUID
+      - db_type: uuid
+        nullable: true
+        go_type:
+          import: github.com/google/uuid
+          type: UUID
+          pointer: true
+      - db_type: timestamptz
+        go_type: time.Time
+      - db_type: timestamptz
+        nullable: true
+        go_type:
+          type: time.Time
+          pointer: true
+      - db_type: citext
+        go_type: string
+      - db_type: pg_catalog.numeric
+        go_type: float64
+      - db_type: pg_catalog.numeric
+        nullable: true
+        go_type:
+          type: float64
+          pointer: true
+      - db_type: pg_catalog.varchar
+        nullable: true
+        go_type:
+          type: string
+          pointer: true
+
 sql:
   - engine: postgresql
     schema: migrations
@@ -8,34 +53,12 @@ sql:
     gen:
       go: &go
         package: users
-        # The users package exposes its own User type; sqlc's generated row types stay unexported there.
-        rename:
-          user: userRow
-          user_role: userRole
-          user_role_admin: userRoleAdmin
-          user_role_member: userRoleMember
         out: internal/features/users
         sql_package: pgx/v5
         output_db_file_name: sqlc_db.go
         output_models_file_name: sqlc_models.go
-        overrides:
-          - db_type: uuid
-            go_type: github.com/google/uuid.UUID
-          - db_type: uuid
-            nullable: true
-            go_type:
-              import: github.com/google/uuid
-              type: UUID
-              pointer: true
-          - db_type: timestamptz
-            go_type: time.Time
-          - db_type: timestamptz
-            nullable: true
-            go_type:
-              type: time.Time
-              pointer: true
-          - db_type: citext
-            go_type: string
+        # Only the models and enums this package's queries use, not every table in the schema.
+        omit_unused_structs: true
   - engine: postgresql
     schema: migrations
     queries: internal/features/auth/queries.sql
@@ -44,3 +67,11 @@ sql:
         <<: *go
         package: auth
         out: internal/features/auth
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/miniatures/queries.sql
+    gen:
+      go:
+        <<: *go
+        package: miniatures
+        out: internal/features/miniatures

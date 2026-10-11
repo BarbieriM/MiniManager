@@ -121,6 +121,32 @@ func (s *Service) FindByID(ctx context.Context, id uuid.UUID) (User, error) {
 	return toUser(row), nil
 }
 
+// FindByIDs returns the Users with those ids, keyed by id, in one query. Unknown ids are left out.
+func (s *Service) FindByIDs(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]User, error) {
+	rows, err := s.queries.GetUsersByIDs(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("find users by ids: %w", err)
+	}
+	found := make(map[uuid.UUID]User, len(rows))
+	for _, row := range rows {
+		found[row.ID] = toUser(row)
+	}
+	return found, nil
+}
+
+// ListActive returns every active User, A to Z, for the Admin's owner picker (Card 4 rule 4).
+func (s *Service) ListActive(ctx context.Context) ([]User, error) {
+	rows, err := s.queries.ListActiveUsers(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list active users: %w", err)
+	}
+	active := make([]User, len(rows))
+	for i, row := range rows {
+		active[i] = toUser(row)
+	}
+	return active, nil
+}
+
 // found turns pgx's "no rows" into ErrNotFound.
 func found(row userRow, err error) (userRow, error) {
 	if errors.Is(err, pgx.ErrNoRows) {

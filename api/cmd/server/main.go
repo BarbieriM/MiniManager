@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/BarbieriM/MiniManager/api/internal/features/auth"
+	"github.com/BarbieriM/MiniManager/api/internal/features/miniatures"
 	"github.com/BarbieriM/MiniManager/api/internal/features/users"
 	platformauth "github.com/BarbieriM/MiniManager/api/internal/platform/auth"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/config"
@@ -52,8 +53,14 @@ func run() error {
 	}
 
 	server := &http.Server{
-		Addr:              ":" + cfg.Port,
-		Handler:           newHandler(handlerDeps{auth: authService, webDir: cfg.WebDir}),
+		Addr: ":" + cfg.Port,
+		Handler: newHandler(handlerDeps{
+			auth:         authService,
+			users:        userService,
+			miniatures:   miniatures.NewService(pool, userService, time.Now),
+			accessTokens: accessTokens,
+			webDir:       cfg.WebDir,
+		}),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,
