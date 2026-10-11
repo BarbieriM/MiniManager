@@ -76,7 +76,7 @@ export function DevUiPage(): ReactElement {
 
             <GallerySection title="Colour">
               <GalleryExample label="Surfaces and ink">
-                {['bg-page', 'bg-raised', 'bg-sunken', 'bg-ink', 'bg-ink-2', 'bg-rule', 'bg-rule-strong', 'bg-accent', 'bg-hand-painted', 'bg-pre-painted', 'bg-not-painted', 'bg-error', 'bg-success'].map((colorClass) => (
+                {['bg-page', 'bg-raised', 'bg-sunken', 'bg-ink', 'bg-ink-2', 'bg-rule', 'bg-rule-strong', 'bg-accent', 'bg-hand-painted', 'bg-pre-painted', 'bg-unpainted', 'bg-error', 'bg-success'].map((colorClass) => (
                   <span key={colorClass} className="flex items-center gap-2">
                     <span className={`size-6 border border-rule-strong ${colorClass}`} />
                     <span className="type-mono">{colorClass}</span>

@@ -7,13 +7,13 @@ import { Segmented } from './Segmented'
 describe('Segmented', () => {
   it('moves the choice with the arrow keys', async () => {
     const options = [
-      { value: 'not_painted', label: 'Not painted' },
+      { value: 'unpainted', label: 'Unpainted' },
       { value: 'pre_painted', label: 'Pre-painted' },
       { value: 'hand_painted', label: 'Hand-painted' },
     ]
-    render(<WithState initialValue="not_painted">{(value, setValue) => <Segmented label="Paint status" options={options} value={value} onChange={setValue} />}</WithState>)
+    render(<WithState initialValue="unpainted">{(value, setValue) => <Segmented label="Paint status" options={options} value={value} onChange={setValue} />}</WithState>)
     await userEvent.tab()
-    expect(screen.getByRole('radio', { name: 'Not painted' })).toHaveFocus()
+    expect(screen.getByRole('radio', { name: 'Unpainted' })).toHaveFocus()
     await userEvent.keyboard('{ArrowRight}')
     expect(screen.getByRole('radio', { name: 'Pre-painted' })).toBeChecked()
     expect(screen.getByRole('radio', { name: 'Pre-painted' })).toHaveFocus()

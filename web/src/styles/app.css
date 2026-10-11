@@ -32,7 +32,7 @@
   --color-on-accent: var(--ink-on-accent);
   --color-hand-painted: var(--status-hand-painted);
   --color-pre-painted: var(--status-pre-painted);
-  --color-not-painted: var(--status-not-painted);
+  --color-unpainted: var(--status-unpainted);
   --color-error: var(--feedback-error);
   --color-success: var(--feedback-success);
 }
@@ -45,7 +45,7 @@
     --rule-default: #D6CEBD; --rule-strong: #1B1A17;
     --accent-vermilion: #B73A1B;
     --status-hand-painted: #9A6B12; --status-pre-painted: #2C6A64;
-    --status-not-painted: var(--ink-secondary);
+    --status-unpainted: var(--ink-secondary);
     --feedback-error: var(--accent-vermilion); --feedback-success: #3F6B2E;
     --ink-on-accent: var(--bg-raised);
   }
@@ -56,7 +56,7 @@
     --rule-default: #34312A; --rule-strong: #ECE5D5;
     --accent-vermilion: #E0623F;
     --status-hand-painted: #D6A84A; --status-pre-painted: #6FB1A8;
-    --status-not-painted: var(--ink-secondary);
+    --status-unpainted: var(--ink-secondary);
     --feedback-error: var(--accent-vermilion); --feedback-success: #8DBA74;
     --ink-on-accent: var(--bg-page);
   }

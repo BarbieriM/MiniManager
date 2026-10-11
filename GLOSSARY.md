@@ -47,8 +47,8 @@ The User a Miniature belongs to, who physically holds it.
 _Avoid_: Creator, holder
 
 **Paint status**:
-How a Miniature is painted. It is one of Pre-painted, Hand-painted or Not painted.
-_Avoid_: Paint state, finish
+How a Miniature is painted. It is one of Pre-painted, Hand-painted or Unpainted.
+_Avoid_: Paint state, finish, Not painted
 
 **Tag**:
 A free label on a Miniature, optionally namespaced as `namespace:value` (for example `faction:drow`).
