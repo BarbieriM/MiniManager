@@ -14,6 +14,9 @@ export function useSaveMiniature(id?: string): UseMutationResult<Miniature, Erro
     onSuccess: async (saved) => {
       queryClient.setQueryData(queryKeys.miniatures.detail(saved.id), saved)
       await queryClient.invalidateQueries({ queryKey: queryKeys.miniatures.all, refetchType: 'none' })
+      // Counts and tags in use change with every save.
+      await queryClient.invalidateQueries({ queryKey: queryKeys.filterDefinitions, refetchType: 'none' })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tagsInUse, refetchType: 'none' })
     },
   })
 }

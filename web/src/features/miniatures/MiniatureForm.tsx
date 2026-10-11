@@ -11,6 +11,7 @@ import { formatChallengeRating } from '../../shared/lib/formatChallengeRating'
 import { paintStatusLabels, paintStatuses, type PaintStatus } from '../../shared/lib/paintStatuses'
 import { Button, Dialog, Field, MessageBox, NumberStepper, Segmented, Select, StickyActionBar, TagInput, Textarea, TextInput } from '../../shared/ui'
 import { useSession } from '../auth/useSession'
+import { useTagsInUse } from '../filters/useTagsInUse'
 import { DeleteMiniatureDialog } from './DeleteMiniatureDialog'
 import type { Miniature } from './Miniature'
 import type { MiniatureRequest } from './MiniatureRequest'
@@ -75,6 +76,7 @@ export function MiniatureForm({ miniature, onReload = () => {} }: MiniatureFormP
   const { user } = useSession()
   const isAdmin = user.role === 'admin'
   const owners = useOwnerOptions()
+  const tagsInUse = useTagsInUse()
   const navigate = useNavigate()
   const save = useSaveMiniature(miniature?.id)
   const [formProblem, setFormProblem] = useState<string | null>(null)
@@ -193,7 +195,11 @@ export function MiniatureForm({ miniature, onReload = () => {} }: MiniatureFormP
         render={({ field }) => <Segmented label="Paint status" options={paintOptions} value={field.value} onChange={field.onChange} fullWidth />}
       />
       <Field label="Tags" errorMessage={errors.tags?.message}>
-        <Controller control={control} name="tags" render={({ field }) => <TagInput value={field.value} onChange={field.onChange} />} />
+        <Controller
+          control={control}
+          name="tags"
+          render={({ field }) => <TagInput value={field.value} onChange={field.onChange} tagsInUse={tagsInUse.data ?? []} />}
+        />
       </Field>
       <div className="grid gap-6 md:grid-cols-2">
         <Field label="Storage location" errorMessage={errors.storageLocation?.message}>

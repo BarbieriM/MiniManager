@@ -25,18 +25,3 @@ DELETE FROM miniatures WHERE id = $1;
 
 -- name: CountMiniatures :one
 SELECT count(*) FROM miniatures;
-
--- The list queries differ only in their ORDER BY; ties end on id so paging is stable (Card 5 rule 10).
--- Step 3's filters replace them with one built query.
-
--- name: ListMiniaturesByName :many
-SELECT * FROM miniatures ORDER BY name_search, id LIMIT $1 OFFSET $2;
-
--- name: ListMiniaturesNewestFirst :many
-SELECT * FROM miniatures ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2;
-
--- name: ListMiniaturesByChallengeRating :many
-SELECT * FROM miniatures ORDER BY challenge_rating NULLS LAST, name_search, id LIMIT $1 OFFSET $2;
-
--- name: ListMiniaturesBySize :many
-SELECT * FROM miniatures ORDER BY size, name_search, id LIMIT $1 OFFSET $2;

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/BarbieriM/MiniManager/api/internal/features/auth"
+	"github.com/BarbieriM/MiniManager/api/internal/features/filters"
 	"github.com/BarbieriM/MiniManager/api/internal/features/miniatures"
 	"github.com/BarbieriM/MiniManager/api/internal/features/users"
 	platformauth "github.com/BarbieriM/MiniManager/api/internal/platform/auth"
@@ -19,6 +20,7 @@ import (
 type handlerDeps struct {
 	auth         *auth.Service
 	users        *users.Service
+	filters      *filters.Service
 	miniatures   *miniatures.Service
 	accessTokens *platformauth.AccessTokens
 	// webDir holds the built SPA (web/dist). Empty means the API runs alone, as in `make dev`.
@@ -32,6 +34,7 @@ func newHandler(deps handlerDeps) http.Handler {
 	requireUser := deps.users.RequireUser(deps.accessTokens)
 	users.NewHandler(deps.users).Register(mux, requireUser)
 	miniatures.NewHandler(deps.miniatures).Register(mux, requireUser)
+	filters.NewHandler(deps.filters).Register(mux, requireUser)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteProblem(w, http.StatusNotFound, "There is no API endpoint at this path.")

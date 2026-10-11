@@ -1,4 +1,5 @@
-package miniatures
+// Package textsearch folds text for case- and accent-insensitive matching. It holds no business rules.
+package textsearch
 
 import (
 	"strings"
@@ -7,9 +8,9 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-// nameSearch is the form of a name that sorting and search use: lower-cased with accents removed, so "Éttercap"
-// becomes "ettercap" (CLAUDE.md, Database rules).
-func nameSearch(name string) string {
+// Fold lower-cases text and removes accents, so "Éttercap" becomes "ettercap". Miniature names are stored folded in
+// name_search (CLAUDE.md, Database rules), and search text is folded the same way before matching.
+func Fold(name string) string {
 	// NFD splits "é" into "e" plus a combining accent mark (Unicode category Mn), which is then dropped.
 	var builder strings.Builder
 	for _, character := range norm.NFD.String(strings.ToLower(name)) {

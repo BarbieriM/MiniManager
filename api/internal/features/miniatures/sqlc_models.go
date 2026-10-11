@@ -156,23 +156,23 @@ func (ns NullPaintStatus) Value() (driver.Value, error) {
 }
 
 type miniatureRow struct {
-	ID              uuid.UUID
-	OwnerID         uuid.UUID
-	CreatedBy       uuid.UUID
-	Name            string
-	NameSearch      string
-	CreatureType    CreatureType
-	Size            CreatureSize
-	ChallengeRating *float64
-	Quantity        int16
-	PaintStatus     PaintStatus
-	Tags            []string
-	StorageLocation *string
-	Manufacturer    *string
-	Notes           *string
-	SystemStats     []byte
-	CustomFields    []byte
-	Version         int32
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	ID              uuid.UUID    `db:"id"`
+	OwnerID         uuid.UUID    `db:"owner_id"`
+	CreatedBy       uuid.UUID    `db:"created_by"`
+	Name            string       `db:"name"`
+	NameSearch      string       `db:"name_search"`
+	CreatureType    CreatureType `db:"creature_type"`
+	Size            CreatureSize `db:"size"`
+	ChallengeRating *float64     `db:"challenge_rating"`
+	Quantity        int16        `db:"quantity"`
+	PaintStatus     PaintStatus  `db:"paint_status"`
+	Tags            []string     `db:"tags"`
+	StorageLocation *string      `db:"storage_location"`
+	Manufacturer    *string      `db:"manufacturer"`
+	Notes           *string      `db:"notes"`
+	SystemStats     []byte       `db:"system_stats"`
+	CustomFields    []byte       `db:"custom_fields"`
+	Version         int32        `db:"version"`
+	CreatedAt       time.Time    `db:"created_at"`
+	UpdatedAt       time.Time    `db:"updated_at"`
 }

@@ -1,5 +1,7 @@
 import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router'
+import { describe, expect, it, vi } from 'vitest'
 import { renderAtPath } from '../../../test/renderAtPath'
 import type { CatalogItem } from '../internal/CatalogItem'
 import { CatalogTable } from './CatalogTable'
@@ -33,5 +35,25 @@ describe('CatalogTable', () => {
     expect(rows[1]).toHaveTextContent('×3')
     expect(rows[1]).toHaveTextContent('Box 3')
     expect(row.getByLabelText('Owner: Rafa Lima')).toHaveTextContent('RL')
+  })
+
+  it('sorts by a column from its header, and reverses on a second click', async () => {
+    const onSortChange = vi.fn()
+    const { rerender } = renderAtPath('/', <CatalogTable items={[goblin]} sort="name" onSortChange={onSortChange} />)
+
+    const nameHeader = screen.getByRole('columnheader', { name: /Name/ })
+    expect(nameHeader).toHaveAttribute('aria-sort', 'ascending')
+    await userEvent.click(within(nameHeader).getByRole('button'))
+    expect(onSortChange).toHaveBeenLastCalledWith('-name')
+
+    await userEvent.click(within(screen.getByRole('columnheader', { name: /CR/ })).getByRole('button'))
+    expect(onSortChange).toHaveBeenLastCalledWith('challengeRating')
+
+    rerender(
+      <MemoryRouter>
+        <CatalogTable items={[goblin]} sort="-challengeRating" onSortChange={onSortChange} />
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('columnheader', { name: /CR/ })).toHaveAttribute('aria-sort', 'descending')
   })
 })

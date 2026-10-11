@@ -11,6 +11,9 @@ export function useDeleteMiniature(): UseMutationResult<void, Error, string> {
     onSuccess: async (_, id) => {
       queryClient.removeQueries({ queryKey: queryKeys.miniatures.detail(id) })
       await queryClient.invalidateQueries({ queryKey: queryKeys.miniatures.all })
+      // Counts and tags in use change with every delete.
+      await queryClient.invalidateQueries({ queryKey: queryKeys.filterDefinitions })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tagsInUse })
     },
   })
 }

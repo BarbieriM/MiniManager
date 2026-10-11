@@ -41,7 +41,6 @@ Seven features are planned: four for the MVP and three for later.
 | Owner | yes | Needed because the collection is shared |
 | Paint status | yes | Pre-painted, hand-painted, unpainted |
 | Tags | yes | Match any or match all; covers faction, weapon and armor for now |
-| Quantity owned (at least N) | yes | Groundwork for the encounter picker |
 | Storage location | v1.1 | Free text in the MVP, becomes a filter once values settle |
 | Manufacturer | v1.1 | Same as storage location; it is the worked example in section 6 |
 | Faction, weapon / armor as fields | v1.1 | Promoted from tags into custom fields if tags get messy |
@@ -186,7 +185,7 @@ The API is REST and JSON under `/api/v1`. Errors use the RFC 9457 `application/p
 | PATCH | /admin/users/{id} | admin | Change role or deactivate (4) |
 | GET, PATCH | /me | user | Read and edit my profile (3) |
 | POST | /me/password | user | Change password (3) |
-| GET | /miniatures | user | List with filters, sort, paging (5, 6) |
+| GET | /miniatures | user | List with filters, sort, paging (5, 6); the envelope adds `catalogTotal`, the unfiltered count, for "48 of 312 minis" |
 | POST | /miniatures | user | Create (5) |
 | GET | /miniatures/{id} | user | Details (5) |
 | PUT | /miniatures/{id} | owner, admin | Update with version check (5) |
@@ -195,7 +194,7 @@ The API is REST and JSON under `/api/v1`. Errors use the RFC 9457 `application/p
 | POST | /miniatures/{id}/photos | owner, admin | Register an uploaded photo (7) |
 | PATCH | /miniatures/{id}/photos/{photoId} | owner, admin | Set cover or order (7) |
 | DELETE | /miniatures/{id}/photos/{photoId} | owner, admin | Remove a photo (7) |
-| GET | /filters | user | Filter definitions from the registry, so the UI draws controls automatically (6) |
+| GET | /filters | user | Filter definitions from the registry, with whole-Catalog option counts, so the UI draws controls automatically (6) |
 | GET | /tags | user | Tags in use, for the tag picker (6) |
 | GET | /users/options | user | Active users for the owner filter (6) |
 | GET | /flags | user | Feature flags for the current user (section 6) |
@@ -474,7 +473,7 @@ The registry ANDs this filter with the others automatically, because the list qu
 
 | Phase | Features | Done when |
 | --- | --- | --- |
-| MVP | Invite and sign-up, login / logout / reset, edit profile, roles (Cards 1 to 4); catalog CRUD (Card 5); search and 8 filters (Card 6); up to 3 photos (Card 7); CI and deploy | The definition of done in section 2 passes on a phone |
+| MVP | Invite and sign-up, login / logout / reset, edit profile, roles (Cards 1 to 4); catalog CRUD (Card 5); search and 7 filters (Card 6); up to 3 photos (Card 7); CI and deploy | The definition of done in section 2 passes on a phone |
 | v1.1 | CSV import / export (Card 9); saved filter presets; storage location and manufacturer filters; custom fields; nested AND / OR builder; Google login; email change and avatar; Admin tag merge | Group has entered most of the collection and filters stay clean |
 | v2 | Encounter picker (Card 8); private lists with share link (Card 10); soft delete | A DM preps a session's minis from a request and shares the list |
 
@@ -482,7 +481,7 @@ Suggested build order inside the MVP:
 
 1. Skeleton: Go service serving a blank SPA, Postgres, migration 0001, seed Admin, login and logout, deployed by CI.
 2. Miniature create, list, details, edit and delete with the version check.
-3. Filter registry and the 8 MVP filters, with filters stored in the URL.
+3. Filter registry and the 7 MVP filters, with filters stored in the URL.
 4. Roles enforced, invites and password reset by email.
 5. Photos.
 6. Phone polish: bottom-sheet filters, camera upload, a real-device test.

@@ -153,7 +153,7 @@ Full rules are in `docs/context.md`. The short version:
 ## Current phase: MVP
 
 Build order: (1) skeleton: Go serves a blank SPA, Postgres, migration 0001, seed Admin, login/logout, deployed by
-CI; (2) miniature CRUD with version check; (3) filter registry + 8 MVP filters in the URL; (4) roles, invites,
+CI; (2) miniature CRUD with version check; (3) filter registry + 7 MVP filters in the URL; (4) roles, invites,
 password reset email; (5) photos (max 3, 5 MB, JPEG/PNG/WebP); (6) phone polish.
 
 Out of the MVP: lists and share links, Google login, CSV import/export, encounter picker, saved presets,

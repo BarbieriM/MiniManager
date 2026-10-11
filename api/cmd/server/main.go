@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/BarbieriM/MiniManager/api/internal/features/auth"
+	"github.com/BarbieriM/MiniManager/api/internal/features/filters"
 	"github.com/BarbieriM/MiniManager/api/internal/features/miniatures"
 	"github.com/BarbieriM/MiniManager/api/internal/features/users"
 	platformauth "github.com/BarbieriM/MiniManager/api/internal/platform/auth"
@@ -52,12 +53,15 @@ func run() error {
 		return err
 	}
 
+	filterService := filters.NewService(pool, userService)
+
 	server := &http.Server{
 		Addr: ":" + cfg.Port,
 		Handler: newHandler(handlerDeps{
 			auth:         authService,
 			users:        userService,
-			miniatures:   miniatures.NewService(pool, userService, time.Now),
+			filters:      filterService,
+			miniatures:   miniatures.NewService(pool, userService, filterService, time.Now),
 			accessTokens: accessTokens,
 			webDir:       cfg.WebDir,
 		}),

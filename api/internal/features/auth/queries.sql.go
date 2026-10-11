@@ -26,8 +26,8 @@ SELECT count(*) FROM login_failures WHERE email = $1 AND failed_at > $2
 `
 
 type CountLoginFailuresSinceParams struct {
-	Email    string
-	FailedAt time.Time
+	Email    string    `db:"email"`
+	FailedAt time.Time `db:"failed_at"`
 }
 
 func (q *Queries) CountLoginFailuresSince(ctx context.Context, arg CountLoginFailuresSinceParams) (int64, error) {
@@ -43,11 +43,11 @@ VALUES ($1, $2, $3, $4, $5)
 `
 
 type CreateRefreshTokenParams struct {
-	ID        uuid.UUID
-	UserID    uuid.UUID
-	SessionID uuid.UUID
-	TokenHash string
-	ExpiresAt time.Time
+	ID        uuid.UUID `db:"id"`
+	UserID    uuid.UUID `db:"user_id"`
+	SessionID uuid.UUID `db:"session_id"`
+	TokenHash string    `db:"token_hash"`
+	ExpiresAt time.Time `db:"expires_at"`
 }
 
 func (q *Queries) CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) error {
@@ -66,8 +66,8 @@ DELETE FROM login_failures WHERE email = $1 AND failed_at <= $2
 `
 
 type DeleteLoginFailuresBeforeParams struct {
-	Email    string
-	FailedAt time.Time
+	Email    string    `db:"email"`
+	FailedAt time.Time `db:"failed_at"`
 }
 
 // DeleteLoginFailuresBefore keeps the table small: rows older than the lockout window no longer count.
@@ -102,9 +102,9 @@ UPDATE refresh_tokens SET revoked_at = $2, replaced_by = $3, updated_at = $2 WHE
 `
 
 type MarkRefreshTokenRotatedParams struct {
-	ID         uuid.UUID
-	RevokedAt  *time.Time
-	ReplacedBy *uuid.UUID
+	ID         uuid.UUID  `db:"id"`
+	RevokedAt  *time.Time `db:"revoked_at"`
+	ReplacedBy *uuid.UUID `db:"replaced_by"`
 }
 
 // MarkRefreshTokenRotated affects no row when another request already rotated or revoked the token.
@@ -121,8 +121,8 @@ SELECT failed_at FROM login_failures WHERE email = $1 ORDER BY failed_at DESC OF
 `
 
 type NthLatestLoginFailureParams struct {
-	Email  string
-	Offset int32
+	Email  string `db:"email"`
+	Offset int32  `db:"offset"`
 }
 
 // NthLatestLoginFailure returns the failed_at of the email's (n+1)th most recent failure; it tells a locked
@@ -139,9 +139,9 @@ INSERT INTO login_failures (id, email, failed_at) VALUES ($1, $2, $3)
 `
 
 type RecordLoginFailureParams struct {
-	ID       uuid.UUID
-	Email    string
-	FailedAt time.Time
+	ID       uuid.UUID `db:"id"`
+	Email    string    `db:"email"`
+	FailedAt time.Time `db:"failed_at"`
 }
 
 func (q *Queries) RecordLoginFailure(ctx context.Context, arg RecordLoginFailureParams) error {
@@ -154,8 +154,8 @@ UPDATE refresh_tokens SET revoked_at = $2, updated_at = $2 WHERE id = $1 AND rev
 `
 
 type RevokeRefreshTokenParams struct {
-	ID        uuid.UUID
-	RevokedAt *time.Time
+	ID        uuid.UUID  `db:"id"`
+	RevokedAt *time.Time `db:"revoked_at"`
 }
 
 func (q *Queries) RevokeRefreshToken(ctx context.Context, arg RevokeRefreshTokenParams) error {
@@ -168,8 +168,8 @@ UPDATE refresh_tokens SET revoked_at = $2, updated_at = $2 WHERE session_id = $1
 `
 
 type RevokeSessionParams struct {
-	SessionID uuid.UUID
-	RevokedAt *time.Time
+	SessionID uuid.UUID  `db:"session_id"`
+	RevokedAt *time.Time `db:"revoked_at"`
 }
 
 func (q *Queries) RevokeSession(ctx context.Context, arg RevokeSessionParams) error {

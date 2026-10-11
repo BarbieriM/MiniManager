@@ -241,3 +241,75 @@ func TestCard4_Rule4_OwnerOptionsListActiveUsers(t *testing.T) {
 		t.Errorf("items = %+v, want Ana then Mateus with ids", body.Items)
 	}
 }
+
+func (s testServer) createMiniature(t *testing.T, accessToken, body string) {
+	t.Helper()
+	if response := s.doAs(t, accessToken, http.MethodPost, "/api/v1/miniatures", body); response.StatusCode != http.StatusCreated {
+		t.Fatalf("create %s: status %d", body, response.StatusCode)
+	}
+}
+
+func TestCard6_FiltersArriveAsRepeatedURLParametersAndTheListCountsTheCatalog(t *testing.T) {
+	server := newTestServer(t)
+	token := server.adminToken(t)
+	server.createMiniature(t, token, `{"name":"Goblin","creatureType":"humanoid","size":"small","tags":["goblinoid"]}`)
+	server.createMiniature(t, token, `{"name":"Hobgoblin","creatureType":"humanoid","size":"medium","tags":["goblinoid"]}`)
+	server.createMiniature(t, token, `{"name":"Ogre","creatureType":"giant","size":"large"}`)
+
+	response := server.doAs(t, token, http.MethodGet, "/api/v1/miniatures?size=small&size=medium&q=GOB&sort=-name", "")
+
+	body := decode[struct {
+		pageBody
+		CatalogTotal int `json:"catalogTotal"`
+	}](t, response)
+	if response.StatusCode != http.StatusOK || body.Total != 2 || body.CatalogTotal != 3 {
+		t.Fatalf("status %d, total %d, catalogTotal %d; want 200, 2 and 3", response.StatusCode, body.Total, body.CatalogTotal)
+	}
+	if body.Items[0].Name != "Hobgoblin" || body.Items[1].Name != "Goblin" {
+		t.Errorf("items = %q, %q; want Hobgoblin then Goblin (sort=-name)", body.Items[0].Name, body.Items[1].Name)
+	}
+}
+
+func TestCard6_Rule8_AnInvalidFilterValueReturns400WithTheFieldName(t *testing.T) {
+	server := newTestServer(t)
+
+	response := server.doAs(t, server.adminToken(t), http.MethodGet, "/api/v1/miniatures?crMin=5&crMax=2&unknown=ignored", "")
+
+	problem := assertProblem(t, response, http.StatusBadRequest, "")
+	if len(problem.Errors) != 1 || problem.Errors[0].Field != "crMin" {
+		t.Errorf("errors = %+v, want one on crMin", problem.Errors)
+	}
+}
+
+func TestCard6_Rule10_FilterDefinitionsAndTagsInUse(t *testing.T) {
+	server := newTestServer(t)
+	token := server.adminToken(t)
+	server.createMiniature(t, token, `{"name":"Goblin","creatureType":"humanoid","size":"small","tags":["goblinoid"]}`)
+
+	definitions := decode[[]struct {
+		Key        string   `json:"key"`
+		Control    string   `json:"control"`
+		Parameters []string `json:"parameters"`
+		Options    []struct {
+			Value string `json:"value"`
+			Label string `json:"label"`
+			Count int    `json:"count"`
+		} `json:"options"`
+	}](t, server.doAs(t, token, http.MethodGet, "/api/v1/filters", ""))
+	if len(definitions) != 7 || definitions[1].Key != "creatureType" || definitions[1].Control != "multiSelect" {
+		t.Fatalf("definitions = %+v, want 7 starting q, creatureType (multiSelect)", definitions)
+	}
+	if definitions[3].Key != "challengeRating" || len(definitions[3].Parameters) != 2 || definitions[3].Parameters[0] != "crMin" {
+		t.Errorf("challengeRating definition = %+v, want parameters crMin and crMax", definitions[3])
+	}
+
+	tags := decode[struct {
+		Items []struct {
+			Value string `json:"value"`
+			Count int    `json:"count"`
+		} `json:"items"`
+	}](t, server.doAs(t, token, http.MethodGet, "/api/v1/tags", ""))
+	if len(tags.Items) != 1 || tags.Items[0].Value != "goblinoid" || tags.Items[0].Count != 1 {
+		t.Errorf("tags = %+v, want goblinoid 1", tags.Items)
+	}
+}

@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/BarbieriM/MiniManager/api/internal/features/filters"
 	"github.com/BarbieriM/MiniManager/api/internal/features/miniatures"
 	"github.com/BarbieriM/MiniManager/api/internal/features/users"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/db/dbtest"
@@ -44,7 +45,7 @@ func newFixture(t *testing.T) fixture {
 	}
 	clock := &testClock{current: time.Date(2026, 10, 11, 20, 0, 0, 0, time.UTC)}
 	f := fixture{
-		service: miniatures.NewService(pool, userService, clock.Now),
+		service: miniatures.NewService(pool, userService, filters.NewService(pool, userService), clock.Now),
 		users:   userService,
 		pool:    pool,
 		clock:   clock,
@@ -552,5 +553,30 @@ func TestCard5_Rule3_TagsTreatUnicodeSpacesLikeTheForm(t *testing.T) {
 
 	if want := []string{"goblin-boss", "faction:drow"}; !slices.Equal(got.Tags, want) {
 		t.Errorf("tags = %q, want %q", got.Tags, want)
+	}
+}
+
+func TestCard6_EverySortWorksInBothDirections(t *testing.T) {
+	f := newFixture(t)
+	add := func(name, size string, rating *float64) {
+		input := goblin()
+		input.Name, input.Size, input.ChallengeRating = name, size, rating
+		f.create(t, f.member, input)
+		f.clock.current = f.clock.current.Add(time.Minute)
+	}
+	one, half := 1.0, 0.5
+	add("Ogre", "large", &one)
+	add("Rat", "tiny", nil)
+	add("Kobold", "small", &half)
+
+	for sort, want := range map[miniatures.Sort][]string{
+		miniatures.SortByNameDescending:      {"Rat", "Ogre", "Kobold"},
+		miniatures.SortOldestFirst:           {"Ogre", "Rat", "Kobold"},
+		miniatures.SortByChallengeRatingDesc: {"Ogre", "Kobold", "Rat"}, // no rating sorts last both ways
+		miniatures.SortBySizeDescending:      {"Ogre", "Kobold", "Rat"},
+	} {
+		if got := f.listNames(t, miniatures.ListOptions{Page: 1, PageSize: 24, Sort: sort}); !slices.Equal(got, want) {
+			t.Errorf("%s = %q, want %q", sort, got, want)
+		}
 	}
 }
