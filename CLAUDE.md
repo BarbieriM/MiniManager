@@ -45,7 +45,7 @@ api/
   migrations/      goose SQL files
 web/src/
   app/             router, providers, layout
-  features/        auth, invites, profile, members, miniatures, filters, photos
+  features/        auth, invites, profile, members, miniatures, filters, photos; each split into pages/, components/, api/, lib/
   shared/          api client, design-system components, form helpers
   styles/app.css   Tailwind entry: @import "tailwindcss", @theme tokens, Paper/Lantern variables, @font-face
 docs/  plan.md  features.md  context.md  features/  adr/  design/{design-system,screens}.html

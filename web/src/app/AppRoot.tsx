@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState, type ReactElement } from 'react'
 import { Outlet } from 'react-router'
-import { AuthProvider } from '../features/auth/AuthProvider'
+import { AuthProvider } from '../features/auth/components/AuthProvider'
 import { ApiProblem } from '../shared/api/ApiProblem'
 import { useIsServerWaking } from '../shared/api/useIsServerWaking'
 import { Banner } from '../shared/ui'
