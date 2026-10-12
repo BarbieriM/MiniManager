@@ -239,7 +239,7 @@ func decodeMiniature(w http.ResponseWriter, r *http.Request) (miniatureRequest, 
 	case serverOwnedField(err) != "":
 		httpx.WriteValidationProblem(w, validation.Errors{{Field: serverOwnedField(err), Message: "This field is set by the server."}})
 	default:
-		httpx.WriteProblem(w, http.StatusBadRequest, "The request body is not valid JSON.")
+		httpx.WriteInvalidJSON(w)
 	}
 	return miniatureRequest{}, false
 }

@@ -13,5 +13,21 @@ func CanChangeMiniature(actor User, ownerID uuid.UUID) bool {
 
 // CanChooseOwner reports whether actor may set a Miniature's Owner to someone else: Admins only (Card 4 rule 4).
 func CanChooseOwner(actor User) bool {
+	return isActiveAdmin(actor)
+}
+
+// CanManageUsers reports whether actor may send Invites, change Roles and deactivate or reactivate Users: Admins
+// only (Card 1 rule 1, Card 4 rule 5).
+func CanManageUsers(actor User) bool {
+	return isActiveAdmin(actor)
+}
+
+func isActiveAdmin(actor User) bool {
 	return actor.Active && actor.Role == RoleAdmin
+}
+
+// CanDeactivate reports whether actor may deactivate targetID. Nobody deactivates themself, which would lock them
+// out at once (Card 4, clarified 2026-10-11).
+func CanDeactivate(actor User, targetID uuid.UUID) bool {
+	return CanManageUsers(actor) && actor.ID != targetID
 }

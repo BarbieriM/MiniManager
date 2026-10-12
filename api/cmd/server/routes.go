@@ -10,6 +10,8 @@ import (
 
 	"github.com/BarbieriM/MiniManager/api/internal/features/auth"
 	"github.com/BarbieriM/MiniManager/api/internal/features/filters"
+	"github.com/BarbieriM/MiniManager/api/internal/features/invites"
+	"github.com/BarbieriM/MiniManager/api/internal/features/members"
 	"github.com/BarbieriM/MiniManager/api/internal/features/miniatures"
 	"github.com/BarbieriM/MiniManager/api/internal/features/users"
 	platformauth "github.com/BarbieriM/MiniManager/api/internal/platform/auth"
@@ -22,6 +24,8 @@ type handlerDeps struct {
 	users        *users.Service
 	filters      *filters.Service
 	miniatures   *miniatures.Service
+	invites      *invites.Service
+	members      *members.Service
 	accessTokens *platformauth.AccessTokens
 	// webDir holds the built SPA (web/dist). Empty means the API runs alone, as in `make dev`.
 	webDir string
@@ -30,9 +34,11 @@ type handlerDeps struct {
 // newHandler returns the whole app: the API under /api/v1 and the SPA everywhere else.
 func newHandler(deps handlerDeps) http.Handler {
 	mux := http.NewServeMux()
-	auth.NewHandler(deps.auth).Register(mux)
 	requireUser := deps.users.RequireUser(deps.accessTokens)
+	auth.NewHandler(deps.auth).Register(mux, requireUser)
 	users.NewHandler(deps.users).Register(mux, requireUser)
+	invites.NewHandler(deps.invites).Register(mux, requireUser)
+	members.NewHandler(deps.members).Register(mux, requireUser)
 	miniatures.NewHandler(deps.miniatures).Register(mux, requireUser)
 	filters.NewHandler(deps.filters).Register(mux, requireUser)
 

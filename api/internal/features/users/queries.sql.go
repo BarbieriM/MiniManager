@@ -154,3 +154,128 @@ func (q *Queries) ListActiveUsers(ctx context.Context) ([]userRow, error) {
 	}
 	return items, nil
 }
+
+const listUsers = `-- name: ListUsers :many
+SELECT id, email, password_hash, display_name, role, active, created_at, updated_at FROM users ORDER BY active DESC, lower(display_name), id
+`
+
+// The Members page: active Users A to Z (ignoring case), then deactivated ones.
+func (q *Queries) ListUsers(ctx context.Context) ([]userRow, error) {
+	rows, err := q.db.Query(ctx, listUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []userRow
+	for rows.Next() {
+		var i userRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.PasswordHash,
+			&i.DisplayName,
+			&i.Role,
+			&i.Active,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockActiveAdmins = `-- name: LockActiveAdmins :many
+SELECT id FROM users WHERE role = 'admin' AND active ORDER BY id FOR UPDATE
+`
+
+// LockActiveAdmins locks every active Admin's row until the transaction ends, so two role or active changes that
+// could each remove "the other" Admin run one after the other (Card 4 rule 6).
+func (q *Queries) LockActiveAdmins(ctx context.Context) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, lockActiveAdmins)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateAccess = `-- name: UpdateAccess :one
+UPDATE users SET role = $2, active = $3, updated_at = now() WHERE id = $1 RETURNING id, email, password_hash, display_name, role, active, created_at, updated_at
+`
+
+type UpdateAccessParams struct {
+	ID     uuid.UUID `db:"id"`
+	Role   userRole  `db:"role"`
+	Active bool      `db:"active"`
+}
+
+func (q *Queries) UpdateAccess(ctx context.Context, arg UpdateAccessParams) (userRow, error) {
+	row := q.db.QueryRow(ctx, updateAccess, arg.ID, arg.Role, arg.Active)
+	var i userRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.DisplayName,
+		&i.Role,
+		&i.Active,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateDisplayName = `-- name: UpdateDisplayName :one
+UPDATE users SET display_name = $2, updated_at = now() WHERE id = $1 RETURNING id, email, password_hash, display_name, role, active, created_at, updated_at
+`
+
+type UpdateDisplayNameParams struct {
+	ID          uuid.UUID `db:"id"`
+	DisplayName string    `db:"display_name"`
+}
+
+func (q *Queries) UpdateDisplayName(ctx context.Context, arg UpdateDisplayNameParams) (userRow, error) {
+	row := q.db.QueryRow(ctx, updateDisplayName, arg.ID, arg.DisplayName)
+	var i userRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.DisplayName,
+		&i.Role,
+		&i.Active,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updatePasswordHash = `-- name: UpdatePasswordHash :exec
+UPDATE users SET password_hash = $2, updated_at = now() WHERE id = $1
+`
+
+type UpdatePasswordHashParams struct {
+	ID           uuid.UUID `db:"id"`
+	PasswordHash string    `db:"password_hash"`
+}
+
+func (q *Queries) UpdatePasswordHash(ctx context.Context, arg UpdatePasswordHashParams) error {
+	_, err := q.db.Exec(ctx, updatePasswordHash, arg.ID, arg.PasswordHash)
+	return err
+}

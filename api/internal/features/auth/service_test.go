@@ -13,6 +13,8 @@ import (
 	"github.com/BarbieriM/MiniManager/api/internal/features/users"
 	platformauth "github.com/BarbieriM/MiniManager/api/internal/platform/auth"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/db/dbtest"
+	"github.com/BarbieriM/MiniManager/api/internal/platform/email"
+	"github.com/BarbieriM/MiniManager/api/internal/platform/email/emailtest"
 )
 
 const (
@@ -32,6 +34,7 @@ type fixture struct {
 	accessTokens *platformauth.AccessTokens
 	clock        *testClock
 	pool         *pgxpool.Pool
+	outbox       *emailtest.Recorder
 }
 
 // newFixture returns an auth Service over a fresh database holding one active Admin.
@@ -46,11 +49,12 @@ func newFixture(t *testing.T) fixture {
 		t.Fatalf("CreateAdmin: %v", err)
 	}
 	accessTokens := platformauth.NewAccessTokens([]byte("0123456789abcdef0123456789abcdef"), clock.Now)
-	service, err := auth.NewService(pool, userService, accessTokens, clock.Now)
+	outbox := &emailtest.Recorder{}
+	service, err := auth.NewService(pool, userService, accessTokens, outbox, email.Links{BaseURL: "http://minis.test"}, clock.Now)
 	if err != nil {
 		t.Fatalf("NewService: %v", err)
 	}
-	return fixture{service: service, users: userService, accessTokens: accessTokens, clock: clock, pool: pool}
+	return fixture{service: service, users: userService, accessTokens: accessTokens, clock: clock, pool: pool, outbox: outbox}
 }
 
 func (f fixture) login(t *testing.T) auth.IssuedSession {

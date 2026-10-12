@@ -12,12 +12,12 @@ func envFrom(values map[string]string) func(string) string {
 }
 
 func TestLoad_ValidEnvironment(t *testing.T) {
-	got, err := Load(envFrom(map[string]string{
+	got, err := Load(envFrom(withEmail(map[string]string{
 		"DATABASE_URL": "postgres://localhost/mini",
 		"JWT_SECRET":   validSecret,
 		"PORT":         "8080",
 		"WEB_DIR":      "/app/web",
-	}))
+	})))
 	if err != nil {
 		t.Fatalf("Load returned error: %v", err)
 	}
@@ -36,11 +36,11 @@ func TestLoad_ValidEnvironment(t *testing.T) {
 }
 
 func TestLoad_RejectsJWTSecretShorterThan32Bytes(t *testing.T) {
-	_, err := Load(envFrom(map[string]string{
+	_, err := Load(envFrom(withEmail(map[string]string{
 		"DATABASE_URL": "postgres://localhost/mini",
 		"JWT_SECRET":   validSecret[:31],
 		"PORT":         "8080",
-	}))
+	})))
 	if err == nil || !strings.Contains(err.Error(), "JWT_SECRET") {
 		t.Fatalf("Load error = %v, want one naming JWT_SECRET", err)
 	}
@@ -51,9 +51,47 @@ func TestLoad_ReportsEveryMissingVariable(t *testing.T) {
 	if err == nil {
 		t.Fatal("Load returned no error for an empty environment")
 	}
-	for _, name := range []string{"DATABASE_URL", "JWT_SECRET", "PORT"} {
+	for _, name := range []string{"DATABASE_URL", "JWT_SECRET", "PORT", "EMAIL_FROM", "APP_BASE_URL", "RESEND_API_KEY or EMAIL_OUTBOX_DIR"} {
 		if !strings.Contains(err.Error(), name) {
 			t.Errorf("error %q does not name %s", err, name)
 		}
+	}
+}
+
+// withEmail adds valid email settings (the local outbox) to values.
+func withEmail(values map[string]string) map[string]string {
+	values["EMAIL_FROM"] = "Mini Manager <minis@example.com>"
+	values["APP_BASE_URL"] = "http://localhost:5173"
+	values["EMAIL_OUTBOX_DIR"] = "tmp/outbox"
+	return values
+}
+
+func TestLoad_ReadsTheEmailSettings(t *testing.T) {
+	got, err := Load(envFrom(withEmail(map[string]string{
+		"DATABASE_URL": "postgres://localhost/mini", "JWT_SECRET": validSecret, "PORT": "8080",
+	})))
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if got.EmailFrom != "Mini Manager <minis@example.com>" || got.AppBaseURL != "http://localhost:5173" || got.EmailOutboxDir != "tmp/outbox" {
+		t.Errorf("email settings = %q, %q, %q", got.EmailFrom, got.AppBaseURL, got.EmailOutboxDir)
+	}
+}
+
+func TestLoad_RefusesBothResendAndTheOutbox(t *testing.T) {
+	values := withEmail(map[string]string{"DATABASE_URL": "postgres://localhost/mini", "JWT_SECRET": validSecret, "PORT": "8080"})
+	values["RESEND_API_KEY"] = "re_test"
+	_, err := Load(envFrom(values))
+	if err == nil || !strings.Contains(err.Error(), "RESEND_API_KEY or EMAIL_OUTBOX_DIR") {
+		t.Fatalf("Load error = %v, want one about choosing RESEND_API_KEY or EMAIL_OUTBOX_DIR", err)
+	}
+}
+
+func TestLoad_RejectsABaseURLWithoutScheme(t *testing.T) {
+	values := withEmail(map[string]string{"DATABASE_URL": "postgres://localhost/mini", "JWT_SECRET": validSecret, "PORT": "8080"})
+	values["APP_BASE_URL"] = "localhost:5173"
+	_, err := Load(envFrom(values))
+	if err == nil || !strings.Contains(err.Error(), "APP_BASE_URL") {
+		t.Fatalf("Load error = %v, want one naming APP_BASE_URL", err)
 	}
 }

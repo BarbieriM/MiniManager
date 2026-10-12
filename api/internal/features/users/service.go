@@ -1,5 +1,5 @@
-// Package users holds Users: lookup for login, the first Admin (Card 1 rule 7), and later profile and roles
-// (Cards 3 and 4).
+// Package users holds Users: lookup for login, the first Admin (Card 1 rule 7), Users created from Invites, the
+// profile (Card 3) and the Admin's role and active changes (Card 4).
 package users
 
 import (
@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
-	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -26,6 +25,9 @@ const (
 // ErrNotFound means no User matches.
 var ErrNotFound = errors.New("user not found")
 
+// ErrEmailTaken means a User already has the email (Card 1 rule 2).
+var ErrEmailTaken = errors.New("email already belongs to a user")
+
 // Role is what a User may do (see GLOSSARY.md).
 type Role string
 
@@ -34,6 +36,11 @@ const (
 	RoleAdmin  Role = "admin"
 	RoleMember Role = "member"
 )
+
+// Valid reports whether role is one of the Roles.
+func (role Role) Valid() bool {
+	return role == RoleAdmin || role == RoleMember
+}
 
 // User is a Player's account, as other features see it.
 type User struct {
@@ -52,12 +59,28 @@ type LoginRecord struct {
 
 // Service holds the business rules for Users.
 type Service struct {
+	// pool starts transactions. It is nil on a Service returned by WithTx, which runs inside its caller's.
+	pool    *pgxpool.Pool
 	queries *Queries
 }
 
 // NewService returns a Service that stores Users in pool.
 func NewService(pool *pgxpool.Pool) *Service {
-	return &Service{queries: New(pool)}
+	return &Service{pool: pool, queries: New(pool)}
+}
+
+// WithTx returns a Service whose queries run inside tx, so another feature can create or change a User in the
+// same transaction as its own writes (accepting an Invite, completing a Password reset, deactivating).
+func (s *Service) WithTx(tx pgx.Tx) *Service {
+	return &Service{queries: s.queries.WithTx(tx)}
+}
+
+// inTransaction runs work in a transaction: a new one, or the caller's when s came from WithTx.
+func (s *Service) inTransaction(ctx context.Context, work func(queries *Queries) error) error {
+	if s.pool == nil {
+		return work(s.queries)
+	}
+	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error { return work(s.queries.WithTx(tx)) })
 }
 
 // NewAdmin is the input for CreateAdmin.
@@ -165,11 +188,7 @@ func (admin NewAdmin) validate() error {
 	if address, err := mail.ParseAddress(admin.Email); err != nil || address.Address != admin.Email {
 		problems.Add("email", "Enter a valid email address.")
 	}
-	if length := utf8.RuneCountInString(admin.Password); length < MinPasswordCharacters || length > MaxPasswordCharacters {
-		problems.Add("password", "Password must be 8 to 72 characters.")
-	}
-	if length := utf8.RuneCountInString(admin.DisplayName); length < 2 || length > 40 {
-		problems.Add("displayName", "Display name must be 2 to 40 characters.")
-	}
+	problems = append(problems, PasswordProblems("password", admin.Password)...)
+	problems = append(problems, displayNameProblems(admin.DisplayName)...)
 	return problems.OrNil()
 }
