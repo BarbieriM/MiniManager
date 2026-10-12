@@ -4,21 +4,24 @@ import { Outlet } from 'react-router'
 import { AuthProvider } from '../features/auth/components/AuthProvider'
 import { ApiProblem } from '../shared/api/ApiProblem'
 import { useIsServerWaking } from '../shared/api/useIsServerWaking'
-import { Banner } from '../shared/ui'
+import { Banner, ToastProvider } from '../shared/ui'
 
-// AppRoot wraps every route: the query cache, the Session, and the waking-server banner for Render's cold starts.
+// AppRoot wraps every route: the query cache, the Session, toasts, and the waking-server banner for Render's cold
+// starts.
 export function AppRoot(): ReactElement {
   const isServerWaking = useIsServerWaking()
   const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: retryUnlessTheApiAnswered } } }))
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {isServerWaking && (
-          <Banner icon="clock" showProgress>
-            Waking the server. This can take up to a minute.
-          </Banner>
-        )}
-        <Outlet />
+        <ToastProvider>
+          {isServerWaking && (
+            <Banner icon="clock" showProgress>
+              Waking the server. This can take up to a minute.
+            </Banner>
+          )}
+          <Outlet />
+        </ToastProvider>
       </AuthProvider>
     </QueryClientProvider>
   )

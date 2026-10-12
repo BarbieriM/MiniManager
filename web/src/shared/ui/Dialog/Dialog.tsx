@@ -44,11 +44,11 @@ export function Dialog({ open, onClose, title, children, actions, isSaving = fal
       }}
       className="m-0 size-full max-h-none max-w-none bg-transparent p-6 text-ink backdrop:bg-transparent open:grid open:place-items-center"
     >
-      <div className="grid w-full max-w-110 gap-4 border border-rule-strong bg-raised p-6 outline-16 outline-page">
+      <div className="grid w-full max-w-110 grid-cols-1 gap-4 border border-rule-strong bg-raised p-6 outline-16 outline-page">
         <h2 id={titleId} className="type-title">
           {title}
         </h2>
-        <div id={bodyId} className="type-body grid gap-4">
+        <div id={bodyId} className="type-body grid grid-cols-1 gap-4">
           {children}
         </div>
         <div className="flex flex-wrap justify-end gap-2">{actions}</div>

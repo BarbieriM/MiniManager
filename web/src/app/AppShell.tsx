@@ -21,8 +21,7 @@ export function AppShell(): ReactElement | null {
   const user = { displayName: auth.user.displayName, initials: initialsFromDisplayName(auth.user.displayName) }
   return (
     <div className="flex min-h-dvh flex-col">
-      {/* Members arrives with roles and invites in build step 4, so the link stays hidden until then. */}
-      <AppBar user={user} isAdmin={false} onLogout={() => void logOut()} />
+      <AppBar user={user} isAdmin={auth.user.role === 'admin'} onLogout={() => void logOut()} />
       <main className="flex flex-1 flex-col">
         <Outlet />
       </main>

@@ -169,6 +169,7 @@ export function LayoutDemo(): ReactElement {
         <GalleryExample label="Admin data table (desktop) and mobile list row">
           <div className="w-160 max-w-full">
             <DataTable
+              label="Members"
               gridTemplateColumns="minmax(150px,1fr) 80px 90px 150px"
               headers={[{ label: 'Person' }, { label: 'Role' }, { label: 'Minis', align: 'end' }, { label: '' }]}
             >

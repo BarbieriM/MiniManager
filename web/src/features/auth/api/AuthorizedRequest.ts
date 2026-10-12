@@ -2,5 +2,5 @@
 // an expired token is refreshed once before the request is retried.
 export type AuthorizedRequest = <Result>(
   path: string,
-  options?: { method?: 'GET' | 'POST' | 'PUT' | 'DELETE'; body?: unknown },
+  options?: { method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'; body?: unknown },
 ) => Promise<Result>

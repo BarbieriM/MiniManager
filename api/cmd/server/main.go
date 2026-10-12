@@ -15,11 +15,14 @@ import (
 
 	"github.com/BarbieriM/MiniManager/api/internal/features/auth"
 	"github.com/BarbieriM/MiniManager/api/internal/features/filters"
+	"github.com/BarbieriM/MiniManager/api/internal/features/invites"
+	"github.com/BarbieriM/MiniManager/api/internal/features/members"
 	"github.com/BarbieriM/MiniManager/api/internal/features/miniatures"
 	"github.com/BarbieriM/MiniManager/api/internal/features/users"
 	platformauth "github.com/BarbieriM/MiniManager/api/internal/platform/auth"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/config"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/db"
+	"github.com/BarbieriM/MiniManager/api/internal/platform/email"
 )
 
 func main() {
@@ -48,7 +51,9 @@ func run() error {
 
 	userService := users.NewService(pool)
 	accessTokens := platformauth.NewAccessTokens(cfg.JWTSecret, time.Now)
-	authService, err := auth.NewService(pool, userService, accessTokens, time.Now)
+	sender := email.New(cfg.ResendAPIKey, cfg.EmailOutboxDir, cfg.EmailFrom)
+	links := email.Links{BaseURL: cfg.AppBaseURL}
+	authService, err := auth.NewService(pool, userService, accessTokens, sender, links, time.Now)
 	if err != nil {
 		return err
 	}
@@ -62,6 +67,8 @@ func run() error {
 			users:        userService,
 			filters:      filterService,
 			miniatures:   miniatures.NewService(pool, userService, filterService, time.Now),
+			invites:      invites.NewService(pool, userService, authService, sender, links, time.Now),
+			members:      members.NewService(pool, userService, authService),
 			accessTokens: accessTokens,
 			webDir:       cfg.WebDir,
 		}),
@@ -89,5 +96,7 @@ func run() error {
 	if err := server.Shutdown(shutdownCtx); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("shutdown: %w", err)
 	}
+	// Reset emails are sent after their request was answered; let the ones under way finish.
+	authService.WaitForEmails()
 	return nil
 }

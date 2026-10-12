@@ -40,7 +40,7 @@ api/
   cmd/server/      main: config, db, routes, serves web/dist
   cmd/seed/        creates the first Admin from env vars (idempotent)
   internal/platform/   config, db, httpx, auth, email, images, flags — no business rules
-  internal/features/   auth, invites, users, miniatures, filters, photos
+  internal/features/   auth, invites, users, members, miniatures, filters, photos
       <feature>/handler.go  service.go  queries.sql  service_test.go
   migrations/      goose SQL files
 web/src/
@@ -154,7 +154,7 @@ Full rules are in `docs/context.md`. The short version:
 
 Build order: (1) skeleton: Go serves a blank SPA, Postgres, migration 0001, seed Admin, login/logout, deployed by
 CI; (2) miniature CRUD with version check; (3) filter registry + 7 MVP filters in the URL; (4) roles, invites,
-password reset email; (5) photos (max 3, 5 MB, JPEG/PNG/WebP); (6) phone polish.
+password reset email, edit profile; (5) photos (max 3, 5 MB, JPEG/PNG/WebP); (6) phone polish.
 
 Out of the MVP: lists and share links, Google login, CSV import/export, encounter picker, saved presets,
 custom fields, storage location and manufacturer as filters. Do not build these unless asked.

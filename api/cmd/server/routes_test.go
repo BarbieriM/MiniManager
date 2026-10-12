@@ -15,10 +15,14 @@ import (
 
 	"github.com/BarbieriM/MiniManager/api/internal/features/auth"
 	"github.com/BarbieriM/MiniManager/api/internal/features/filters"
+	"github.com/BarbieriM/MiniManager/api/internal/features/invites"
+	"github.com/BarbieriM/MiniManager/api/internal/features/members"
 	"github.com/BarbieriM/MiniManager/api/internal/features/miniatures"
 	"github.com/BarbieriM/MiniManager/api/internal/features/users"
 	platformauth "github.com/BarbieriM/MiniManager/api/internal/platform/auth"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/db/dbtest"
+	"github.com/BarbieriM/MiniManager/api/internal/platform/email"
+	"github.com/BarbieriM/MiniManager/api/internal/platform/email/emailtest"
 )
 
 const (
@@ -29,6 +33,7 @@ const (
 type testServer struct {
 	handler http.Handler
 	pool    *pgxpool.Pool
+	outbox  *emailtest.Recorder
 }
 
 // newTestServer returns the real router over a fresh database with one Admin, and a fake built SPA.
@@ -42,7 +47,9 @@ func newTestServer(t *testing.T) testServer {
 		t.Fatalf("CreateAdmin: %v", err)
 	}
 	accessTokens := platformauth.NewAccessTokens([]byte("0123456789abcdef0123456789abcdef"), time.Now)
-	authService, err := auth.NewService(pool, userService, accessTokens, time.Now)
+	outbox := &emailtest.Recorder{}
+	links := email.Links{BaseURL: "http://minis.test"}
+	authService, err := auth.NewService(pool, userService, accessTokens, outbox, links, time.Now)
 	if err != nil {
 		t.Fatalf("auth.NewService: %v", err)
 	}
@@ -59,10 +66,13 @@ func newTestServer(t *testing.T) testServer {
 			users:        userService,
 			filters:      filterService,
 			miniatures:   miniatures.NewService(pool, userService, filterService, time.Now),
+			invites:      invites.NewService(pool, userService, authService, outbox, links, time.Now),
+			members:      members.NewService(pool, userService, authService),
 			accessTokens: accessTokens,
 			webDir:       webDir,
 		}),
-		pool: pool,
+		pool:   pool,
+		outbox: outbox,
 	}
 }
 

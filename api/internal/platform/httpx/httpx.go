@@ -47,6 +47,11 @@ func WriteValidationProblem(w http.ResponseWriter, err validation.Errors) {
 	WriteProblem(w, http.StatusBadRequest, "Some fields are invalid.", err...)
 }
 
+// WriteInvalidJSON writes the 400 for a body that DecodeJSON could not read.
+func WriteInvalidJSON(w http.ResponseWriter) {
+	WriteProblem(w, http.StatusBadRequest, "The request body is not valid JSON.")
+}
+
 // WriteInternalError logs err and writes a 500 that reveals nothing about it.
 func WriteInternalError(w http.ResponseWriter, r *http.Request, err error) {
 	log.Printf("%s %s: %v", r.Method, r.URL.Path, err)

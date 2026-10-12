@@ -37,6 +37,46 @@ func (q *Queries) CountLoginFailuresSince(ctx context.Context, arg CountLoginFai
 	return count, err
 }
 
+const countPasswordResetTokensSince = `-- name: CountPasswordResetTokensSince :one
+SELECT count(*) FROM password_reset_tokens WHERE user_id = $1 AND created_at > $2
+`
+
+type CountPasswordResetTokensSinceParams struct {
+	UserID    uuid.UUID `db:"user_id"`
+	CreatedAt time.Time `db:"created_at"`
+}
+
+func (q *Queries) CountPasswordResetTokensSince(ctx context.Context, arg CountPasswordResetTokensSinceParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countPasswordResetTokensSince, arg.UserID, arg.CreatedAt)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const createPasswordResetToken = `-- name: CreatePasswordResetToken :exec
+INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $5)
+`
+
+type CreatePasswordResetTokenParams struct {
+	ID        uuid.UUID `db:"id"`
+	UserID    uuid.UUID `db:"user_id"`
+	TokenHash string    `db:"token_hash"`
+	ExpiresAt time.Time `db:"expires_at"`
+	CreatedAt time.Time `db:"created_at"`
+}
+
+func (q *Queries) CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) error {
+	_, err := q.db.Exec(ctx, createPasswordResetToken,
+		arg.ID,
+		arg.UserID,
+		arg.TokenHash,
+		arg.ExpiresAt,
+		arg.CreatedAt,
+	)
+	return err
+}
+
 const createRefreshToken = `-- name: CreateRefreshToken :exec
 INSERT INTO refresh_tokens (id, user_id, session_id, token_hash, expires_at)
 VALUES ($1, $2, $3, $4, $5)
@@ -76,6 +116,37 @@ func (q *Queries) DeleteLoginFailuresBefore(ctx context.Context, arg DeleteLogin
 	return err
 }
 
+const getNewestPasswordResetTokenID = `-- name: GetNewestPasswordResetTokenID :one
+SELECT id FROM password_reset_tokens WHERE user_id = $1 ORDER BY created_at DESC, id DESC LIMIT 1
+`
+
+// Only a User's newest token works (Card 2 edge case: a reset requested twice).
+func (q *Queries) GetNewestPasswordResetTokenID(ctx context.Context, userID uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, getNewestPasswordResetTokenID, userID)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const getPasswordResetTokenByHash = `-- name: GetPasswordResetTokenByHash :one
+SELECT id, user_id, token_hash, expires_at, used_at, created_at, updated_at FROM password_reset_tokens WHERE token_hash = $1
+`
+
+func (q *Queries) GetPasswordResetTokenByHash(ctx context.Context, tokenHash string) (PasswordResetToken, error) {
+	row := q.db.QueryRow(ctx, getPasswordResetTokenByHash, tokenHash)
+	var i PasswordResetToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TokenHash,
+		&i.ExpiresAt,
+		&i.UsedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getRefreshTokenByHash = `-- name: GetRefreshTokenByHash :one
 SELECT id, user_id, session_id, token_hash, expires_at, revoked_at, replaced_by, created_at, updated_at FROM refresh_tokens WHERE token_hash = $1
 `
@@ -95,6 +166,24 @@ func (q *Queries) GetRefreshTokenByHash(ctx context.Context, tokenHash string) (
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const markPasswordResetTokenUsed = `-- name: MarkPasswordResetTokenUsed :execrows
+UPDATE password_reset_tokens SET used_at = $2, updated_at = $2 WHERE id = $1 AND used_at IS NULL
+`
+
+type MarkPasswordResetTokenUsedParams struct {
+	ID     uuid.UUID  `db:"id"`
+	UsedAt *time.Time `db:"used_at"`
+}
+
+// MarkPasswordResetTokenUsed affects no row when another request used the token first.
+func (q *Queries) MarkPasswordResetTokenUsed(ctx context.Context, arg MarkPasswordResetTokenUsedParams) (int64, error) {
+	result, err := q.db.Exec(ctx, markPasswordResetTokenUsed, arg.ID, arg.UsedAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const markRefreshTokenRotated = `-- name: MarkRefreshTokenRotated :execrows
@@ -149,6 +238,23 @@ func (q *Queries) RecordLoginFailure(ctx context.Context, arg RecordLoginFailure
 	return err
 }
 
+const revokeOtherUserSessions = `-- name: RevokeOtherUserSessions :exec
+UPDATE refresh_tokens SET revoked_at = $1, updated_at = $1
+WHERE user_id = $2 AND session_id <> $3 AND revoked_at IS NULL
+`
+
+type RevokeOtherUserSessionsParams struct {
+	RevokedAt     *time.Time `db:"revoked_at"`
+	UserID        uuid.UUID  `db:"user_id"`
+	KeepSessionID uuid.UUID  `db:"keep_session_id"`
+}
+
+// RevokeOtherUserSessions ends every Session of the User except keepSessionID (Card 3 rule 3).
+func (q *Queries) RevokeOtherUserSessions(ctx context.Context, arg RevokeOtherUserSessionsParams) error {
+	_, err := q.db.Exec(ctx, revokeOtherUserSessions, arg.RevokedAt, arg.UserID, arg.KeepSessionID)
+	return err
+}
+
 const revokeRefreshToken = `-- name: RevokeRefreshToken :exec
 UPDATE refresh_tokens SET revoked_at = $2, updated_at = $2 WHERE id = $1 AND revoked_at IS NULL
 `
@@ -174,5 +280,19 @@ type RevokeSessionParams struct {
 
 func (q *Queries) RevokeSession(ctx context.Context, arg RevokeSessionParams) error {
 	_, err := q.db.Exec(ctx, revokeSession, arg.SessionID, arg.RevokedAt)
+	return err
+}
+
+const revokeUserSessions = `-- name: RevokeUserSessions :exec
+UPDATE refresh_tokens SET revoked_at = $2, updated_at = $2 WHERE user_id = $1 AND revoked_at IS NULL
+`
+
+type RevokeUserSessionsParams struct {
+	UserID    uuid.UUID  `db:"user_id"`
+	RevokedAt *time.Time `db:"revoked_at"`
+}
+
+func (q *Queries) RevokeUserSessions(ctx context.Context, arg RevokeUserSessionsParams) error {
+	_, err := q.db.Exec(ctx, revokeUserSessions, arg.UserID, arg.RevokedAt)
 	return err
 }

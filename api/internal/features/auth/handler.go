@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/BarbieriM/MiniManager/api/internal/features/users"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/httpx"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/validation"
 )
@@ -23,6 +24,8 @@ const (
 	invalidCredentialsMessage = "Email or password is incorrect."
 	lockedMessage             = "Too many attempts. Try again in 15 minutes."
 	sessionExpiredMessage     = "Your session has ended. Log in again."
+	resetRequestedMessage     = "If that email exists, we sent a link."
+	invalidResetMessage       = "This reset link is invalid or expired."
 )
 
 // Handler exposes the Service under /api/v1/auth.
@@ -35,11 +38,15 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
-// Register adds the auth routes to mux.
-func (h *Handler) Register(mux *http.ServeMux) {
+// Register adds the auth routes to mux. Changing a password needs a logged-in User, so it is wrapped in
+// requireUser; it sits under /auth so the browser sends the refresh cookie, which says which Session to keep.
+func (h *Handler) Register(mux *http.ServeMux, requireUser func(http.Handler) http.Handler) {
 	mux.HandleFunc("POST /api/v1/auth/login", h.login)
 	mux.HandleFunc("POST /api/v1/auth/refresh", h.refresh)
 	mux.HandleFunc("POST /api/v1/auth/logout", h.logout)
+	mux.HandleFunc("POST /api/v1/auth/password-reset", h.requestReset)
+	mux.HandleFunc("POST /api/v1/auth/password-reset/confirm", h.confirmReset)
+	mux.Handle("POST /api/v1/auth/password", requireUser(http.HandlerFunc(h.changePassword)))
 }
 
 type loginRequest struct {
@@ -62,7 +69,7 @@ type userResponse struct {
 func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	var request loginRequest
 	if err := httpx.DecodeJSON(w, r, &request); err != nil {
-		httpx.WriteProblem(w, http.StatusBadRequest, "The request body is not valid JSON.")
+		httpx.WriteInvalidJSON(w)
 		return
 	}
 	var problems validation.Errors
@@ -88,7 +95,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		httpx.WriteInternalError(w, r, err)
 	default:
-		writeSession(w, session)
+		WriteSession(w, session)
 	}
 }
 
@@ -105,7 +112,7 @@ func (h *Handler) refresh(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		httpx.WriteInternalError(w, r, err)
 	default:
-		writeSession(w, session)
+		WriteSession(w, session)
 	}
 }
 
@@ -121,7 +128,9 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func writeSession(w http.ResponseWriter, session IssuedSession) {
+// WriteSession answers with a new Session: the access token and User in the body, the refresh token in its
+// cookie. Login, refresh and accepting an Invite all answer this way.
+func WriteSession(w http.ResponseWriter, session IssuedSession) {
 	// The token was issued just now, so the cookie lives exactly as long as the token.
 	http.SetCookie(w, newRefreshCookie(session.RefreshToken, int(RefreshTokenTTL/time.Second)))
 	httpx.WriteJSON(w, http.StatusOK, sessionResponse{
@@ -145,5 +154,82 @@ func newRefreshCookie(value string, maxAge int) *http.Cookie {
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
+	}
+}
+
+type resetRequest struct {
+	Email string `json:"email"`
+}
+
+type messageResponse struct {
+	Message string `json:"message"`
+}
+
+// requestReset always gives the same answer, whatever the email (Card 2 rule 7).
+func (h *Handler) requestReset(w http.ResponseWriter, r *http.Request) {
+	var request resetRequest
+	if err := httpx.DecodeJSON(w, r, &request); err != nil {
+		httpx.WriteInvalidJSON(w)
+		return
+	}
+	if request.Email == "" {
+		httpx.WriteValidationProblem(w, validation.Errors{{Field: "email", Message: "Enter your email."}})
+		return
+	}
+	h.service.RequestPasswordReset(r.Context(), request.Email)
+	httpx.WriteJSON(w, http.StatusAccepted, messageResponse{Message: resetRequestedMessage})
+}
+
+type confirmResetRequest struct {
+	Token    string `json:"token"`
+	Password string `json:"password"`
+}
+
+func (h *Handler) confirmReset(w http.ResponseWriter, r *http.Request) {
+	var request confirmResetRequest
+	if err := httpx.DecodeJSON(w, r, &request); err != nil {
+		httpx.WriteInvalidJSON(w)
+		return
+	}
+	err := h.service.ConfirmPasswordReset(r.Context(), request.Token, request.Password)
+	var problems validation.Errors
+	switch {
+	case errors.As(err, &problems):
+		httpx.WriteValidationProblem(w, problems)
+	case errors.Is(err, ErrInvalidResetToken):
+		httpx.WriteProblem(w, http.StatusGone, invalidResetMessage)
+	case err != nil:
+		httpx.WriteInternalError(w, r, err)
+	default:
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+type changePasswordRequest struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
+}
+
+// changePassword changes the logged-in User's password and ends their other Sessions (Card 3 rules 2 and 3).
+func (h *Handler) changePassword(w http.ResponseWriter, r *http.Request) {
+	var request changePasswordRequest
+	if err := httpx.DecodeJSON(w, r, &request); err != nil {
+		httpx.WriteInvalidJSON(w)
+		return
+	}
+	refreshToken := ""
+	if cookie, err := r.Cookie(refreshCookieName); err == nil {
+		refreshToken = cookie.Value
+	}
+	err := h.service.ChangePassword(r.Context(), users.CurrentUser(r.Context()), refreshToken,
+		PasswordChange{Current: request.CurrentPassword, New: request.NewPassword})
+	var problems validation.Errors
+	switch {
+	case errors.As(err, &problems):
+		httpx.WriteValidationProblem(w, problems)
+	case err != nil:
+		httpx.WriteInternalError(w, r, err)
+	default:
+		w.WriteHeader(http.StatusNoContent)
 	}
 }
