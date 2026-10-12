@@ -18,11 +18,13 @@ import (
 	"github.com/BarbieriM/MiniManager/api/internal/features/invites"
 	"github.com/BarbieriM/MiniManager/api/internal/features/members"
 	"github.com/BarbieriM/MiniManager/api/internal/features/miniatures"
+	"github.com/BarbieriM/MiniManager/api/internal/features/photos"
 	"github.com/BarbieriM/MiniManager/api/internal/features/users"
 	platformauth "github.com/BarbieriM/MiniManager/api/internal/platform/auth"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/db/dbtest"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/email"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/email/emailtest"
+	"github.com/BarbieriM/MiniManager/api/internal/platform/images/imagestest"
 )
 
 const (
@@ -34,10 +36,19 @@ type testServer struct {
 	handler http.Handler
 	pool    *pgxpool.Pool
 	outbox  *emailtest.Recorder
+	// images stands in for Cloudinary; nil when the server was built with Photos off.
+	images *imagestest.Store
 }
 
-// newTestServer returns the real router over a fresh database with one Admin, and a fake built SPA.
+// newTestServer returns the real router over a fresh database with one Admin, a fake built SPA and a fake image
+// store, so Photos are on.
 func newTestServer(t *testing.T) testServer {
+	t.Helper()
+	return newTestServerWith(t, &imagestest.Store{})
+}
+
+// newTestServerWith is newTestServer with imageStore standing in for Cloudinary; nil turns Photos off.
+func newTestServerWith(t *testing.T, imageStore *imagestest.Store) testServer {
 	t.Helper()
 	pool := dbtest.NewDatabase(t)
 	userService := users.NewService(pool)
@@ -55,6 +66,12 @@ func newTestServer(t *testing.T) testServer {
 	}
 
 	filterService := filters.NewService(pool, userService)
+	var store photos.ImageStore
+	if imageStore != nil {
+		store = imageStore
+	}
+	gallery := photos.NewGallery(pool, store)
+	miniatureService := miniatures.NewService(pool, userService, filterService, gallery, time.Now)
 
 	webDir := t.TempDir()
 	writeFile(t, webDir+"/index.html", "<!doctype html><title>Mini Manager</title>")
@@ -65,7 +82,8 @@ func newTestServer(t *testing.T) testServer {
 			auth:         authService,
 			users:        userService,
 			filters:      filterService,
-			miniatures:   miniatures.NewService(pool, userService, filterService, time.Now),
+			miniatures:   miniatureService,
+			photos:       photos.NewService(gallery, miniatureService),
 			invites:      invites.NewService(pool, userService, authService, outbox, links, time.Now),
 			members:      members.NewService(pool, userService, authService),
 			accessTokens: accessTokens,
@@ -73,6 +91,7 @@ func newTestServer(t *testing.T) testServer {
 		}),
 		pool:   pool,
 		outbox: outbox,
+		images: imageStore,
 	}
 }
 

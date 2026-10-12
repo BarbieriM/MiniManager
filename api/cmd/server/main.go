@@ -18,11 +18,13 @@ import (
 	"github.com/BarbieriM/MiniManager/api/internal/features/invites"
 	"github.com/BarbieriM/MiniManager/api/internal/features/members"
 	"github.com/BarbieriM/MiniManager/api/internal/features/miniatures"
+	"github.com/BarbieriM/MiniManager/api/internal/features/photos"
 	"github.com/BarbieriM/MiniManager/api/internal/features/users"
 	platformauth "github.com/BarbieriM/MiniManager/api/internal/platform/auth"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/config"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/db"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/email"
+	"github.com/BarbieriM/MiniManager/api/internal/platform/images"
 )
 
 func main() {
@@ -59,6 +61,13 @@ func run() error {
 	}
 
 	filterService := filters.NewService(pool, userService)
+	// Photos are off unless a Cloudinary account is configured (step 5 planning, Q8).
+	var imageStore photos.ImageStore
+	if cfg.PhotosEnabled() {
+		imageStore = images.NewCloudinary(cfg.Cloudinary)
+	}
+	gallery := photos.NewGallery(pool, imageStore)
+	miniatureService := miniatures.NewService(pool, userService, filterService, gallery, time.Now)
 
 	server := &http.Server{
 		Addr: ":" + cfg.Port,
@@ -66,7 +75,8 @@ func run() error {
 			auth:         authService,
 			users:        userService,
 			filters:      filterService,
-			miniatures:   miniatures.NewService(pool, userService, filterService, time.Now),
+			miniatures:   miniatureService,
+			photos:       photos.NewService(gallery, miniatureService),
 			invites:      invites.NewService(pool, userService, authService, sender, links, time.Now),
 			members:      members.NewService(pool, userService, authService),
 			accessTokens: accessTokens,

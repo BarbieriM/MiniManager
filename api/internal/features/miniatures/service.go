@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -32,13 +33,14 @@ type Service struct {
 	queries *Queries
 	users   *users.Service
 	filters catalogFilters
+	gallery photoGallery
 	now     func() time.Time
 }
 
-// NewService returns a Service. catalogFilters is the filter registry's service (Card 6); now is time.Now in
-// production and a hand-moved clock in tests.
-func NewService(pool *pgxpool.Pool, userService *users.Service, catalogFilters catalogFilters, now func() time.Time) *Service {
-	return &Service{pool: pool, queries: New(pool), users: userService, filters: catalogFilters, now: now}
+// NewService returns a Service. catalogFilters is the filter registry's service (Card 6), gallery reads and deletes
+// Photos (Card 7); now is time.Now in production and a hand-moved clock in tests.
+func NewService(pool *pgxpool.Pool, userService *users.Service, catalogFilters catalogFilters, gallery photoGallery, now func() time.Time) *Service {
+	return &Service{pool: pool, queries: New(pool), users: userService, filters: catalogFilters, gallery: gallery, now: now}
 }
 
 // Owner is the User a Miniature belongs to, as the Catalog shows them.
@@ -66,6 +68,10 @@ type Miniature struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	CanChange       bool
+	// Photos are filled in for one Miniature (details, after a save); CoverThumbnailURL for the Catalog list,
+	// empty when the Miniature has no Photo.
+	Photos            []Photo
+	CoverThumbnailURL string
 }
 
 // Input is what a User sends to add or edit a Miniature. Empty optional fields take Card 5's defaults.
@@ -117,7 +123,7 @@ func (s *Service) Create(ctx context.Context, actor users.User, input Input) (Mi
 	if err != nil {
 		return Miniature{}, fmt.Errorf("create miniature: %w", err)
 	}
-	return s.toMiniature(ctx, actor, row)
+	return s.toSavedMiniature(ctx, actor, row)
 }
 
 // Update replaces a Miniature's fields, provided version is still the stored one (Card 5 rule 7). The version
@@ -165,7 +171,7 @@ func (s *Service) Update(ctx context.Context, actor users.User, id uuid.UUID, ve
 	if err != nil {
 		return Miniature{}, fmt.Errorf("update miniature: %w", err)
 	}
-	return s.toMiniature(ctx, actor, row)
+	return s.toSavedMiniature(ctx, actor, row)
 }
 
 // Delete removes a Miniature for good (Card 5 rule 8). Only its Owner or an Admin may (Card 4).
@@ -183,6 +189,11 @@ func (s *Service) Delete(ctx context.Context, actor users.User, id uuid.UUID) er
 	}
 	if deleted == 0 {
 		return ErrNotFound // deleted by someone else in the meantime
+	}
+	// The Photo rows went with the Miniature; their files are deleted after. A failure leaves invisible files and
+	// does not undo the delete (Card 7 rule 6, step 5 planning Q7).
+	if err := s.gallery.DeleteFilesOf(ctx, id); err != nil {
+		log.Printf("delete miniature %s: delete its photo files: %v", id, err)
 	}
 	return nil
 }
@@ -214,7 +225,16 @@ func (s *Service) Get(ctx context.Context, actor users.User, id uuid.UUID) (Mini
 	if err != nil {
 		return Miniature{}, err
 	}
-	return s.toMiniature(ctx, actor, row)
+	return s.toSavedMiniature(ctx, actor, row)
+}
+
+// toSavedMiniature is one Miniature with its Photos, as the details page and a save answer show it.
+func (s *Service) toSavedMiniature(ctx context.Context, actor users.User, row miniatureRow) (Miniature, error) {
+	miniature, err := s.toMiniature(ctx, actor, row)
+	if err != nil {
+		return Miniature{}, err
+	}
+	return s.withPhotos(ctx, miniature)
 }
 
 func (s *Service) getRow(ctx context.Context, id uuid.UUID) (miniatureRow, error) {

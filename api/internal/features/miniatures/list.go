@@ -107,6 +107,9 @@ func (s *Service) List(ctx context.Context, actor users.User, options ListOption
 	if err != nil {
 		return Page{}, err
 	}
+	if items, err = s.withCovers(ctx, items); err != nil {
+		return Page{}, err
+	}
 	return Page{Items: items, Total: total, CatalogTotal: int(catalogTotal), Page: options.Page, PageSize: options.PageSize}, nil
 }
 

@@ -16,10 +16,11 @@ import (
 	"github.com/BarbieriM/MiniManager/api/internal/platform/validation"
 )
 
-// Messages from Cards 4 and 5.
+// Messages from Cards 4 and 5. NotFoundMessage and ForbiddenMessage are exported because the photos feature
+// answers with the same ones about a Miniature.
 const (
-	notFoundMessage  = "This miniature no longer exists."
-	forbiddenMessage = "You can only change your own miniatures."
+	NotFoundMessage  = "This miniature no longer exists."
+	ForbiddenMessage = "You can only change your own miniatures."
 	conflictMessage  = "Someone changed this miniature while you were editing. Reload to see their changes."
 )
 
@@ -83,6 +84,33 @@ type miniatureResponse struct {
 	CreatedAt       time.Time     `json:"createdAt"`
 	UpdatedAt       time.Time     `json:"updatedAt"`
 	CanChange       bool          `json:"canChange"`
+	// CoverThumbnailURL is the cover Photo at list size, null without Photos (Card 7 rule 8: the UI shows the
+	// size placeholder).
+	CoverThumbnailURL *string `json:"coverThumbnailUrl"`
+}
+
+// PhotoResponse is one Photo as the API shows it. The photos feature answers with the same shape.
+type PhotoResponse struct {
+	ID           string `json:"id"`
+	ThumbnailURL string `json:"thumbnailUrl"`
+	FullURL      string `json:"fullUrl"`
+	IsCover      bool   `json:"isCover"`
+}
+
+// NewPhotoResponses returns photos as JSON, never null.
+func NewPhotoResponses(photos []Photo) []PhotoResponse {
+	responses := make([]PhotoResponse, len(photos))
+	for i, photo := range photos {
+		responses[i] = PhotoResponse{ID: photo.ID.String(), ThumbnailURL: photo.ThumbnailURL, FullURL: photo.FullURL, IsCover: photo.IsCover}
+	}
+	return responses
+}
+
+// detailsResponse is one Miniature with its Photos, and whether Photos are set up, for the details and edit pages.
+type detailsResponse struct {
+	miniatureResponse
+	Photos        []PhotoResponse `json:"photos"`
+	PhotosEnabled bool            `json:"photosEnabled"`
 }
 
 type pageResponse struct {
@@ -158,7 +186,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		writeServiceError(w, r, err)
 		return
 	}
-	httpx.WriteJSON(w, http.StatusCreated, toResponse(miniature))
+	httpx.WriteJSON(w, http.StatusCreated, h.toDetailsResponse(miniature))
 }
 
 func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
@@ -171,7 +199,7 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		writeServiceError(w, r, err)
 		return
 	}
-	httpx.WriteJSON(w, http.StatusOK, toResponse(miniature))
+	httpx.WriteJSON(w, http.StatusOK, h.toDetailsResponse(miniature))
 }
 
 func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
@@ -197,7 +225,7 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 		writeServiceError(w, r, err)
 		return
 	}
-	httpx.WriteJSON(w, http.StatusOK, toResponse(miniature))
+	httpx.WriteJSON(w, http.StatusOK, h.toDetailsResponse(miniature))
 }
 
 func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
@@ -216,7 +244,7 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 func pathID(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		httpx.WriteProblem(w, http.StatusNotFound, notFoundMessage)
+		httpx.WriteProblem(w, http.StatusNotFound, NotFoundMessage)
 		return uuid.UUID{}, false
 	}
 	return id, true
@@ -287,9 +315,9 @@ func writeServiceError(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.As(err, &problems):
 		httpx.WriteValidationProblem(w, problems)
 	case errors.Is(err, ErrNotFound):
-		httpx.WriteProblem(w, http.StatusNotFound, notFoundMessage)
+		httpx.WriteProblem(w, http.StatusNotFound, NotFoundMessage)
 	case errors.Is(err, ErrForbidden):
-		httpx.WriteProblem(w, http.StatusForbidden, forbiddenMessage)
+		httpx.WriteProblem(w, http.StatusForbidden, ForbiddenMessage)
 	case errors.Is(err, ErrVersionConflict):
 		httpx.WriteProblem(w, http.StatusConflict, conflictMessage)
 	default:
@@ -299,21 +327,27 @@ func writeServiceError(w http.ResponseWriter, r *http.Request, err error) {
 
 func toResponse(miniature Miniature) miniatureResponse {
 	return miniatureResponse{
-		ID:              miniature.ID.String(),
-		Name:            miniature.Name,
-		Owner:           ownerResponse{ID: miniature.Owner.ID.String(), DisplayName: miniature.Owner.DisplayName},
-		CreatureType:    miniature.CreatureType,
-		Size:            miniature.Size,
-		ChallengeRating: miniature.ChallengeRating,
-		Quantity:        miniature.Quantity,
-		PaintStatus:     miniature.PaintStatus,
-		Tags:            miniature.Tags,
-		StorageLocation: miniature.StorageLocation,
-		Manufacturer:    miniature.Manufacturer,
-		Notes:           miniature.Notes,
-		Version:         miniature.Version,
-		CreatedAt:       miniature.CreatedAt,
-		UpdatedAt:       miniature.UpdatedAt,
-		CanChange:       miniature.CanChange,
+		ID:                miniature.ID.String(),
+		Name:              miniature.Name,
+		Owner:             ownerResponse{ID: miniature.Owner.ID.String(), DisplayName: miniature.Owner.DisplayName},
+		CreatureType:      miniature.CreatureType,
+		Size:              miniature.Size,
+		ChallengeRating:   miniature.ChallengeRating,
+		Quantity:          miniature.Quantity,
+		PaintStatus:       miniature.PaintStatus,
+		Tags:              miniature.Tags,
+		StorageLocation:   miniature.StorageLocation,
+		Manufacturer:      miniature.Manufacturer,
+		Notes:             miniature.Notes,
+		Version:           miniature.Version,
+		CreatedAt:         miniature.CreatedAt,
+		UpdatedAt:         miniature.UpdatedAt,
+		CanChange:         miniature.CanChange,
+		CoverThumbnailURL: emptyToNil(miniature.CoverThumbnailURL),
 	}
+}
+
+// toDetailsResponse is one Miniature with its Photos.
+func (h *Handler) toDetailsResponse(miniature Miniature) detailsResponse {
+	return detailsResponse{miniatureResponse: toResponse(miniature), Photos: NewPhotoResponses(miniature.Photos), PhotosEnabled: h.service.PhotosEnabled()}
 }

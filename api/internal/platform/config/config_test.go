@@ -95,3 +95,28 @@ func TestLoad_RejectsABaseURLWithoutScheme(t *testing.T) {
 		t.Fatalf("Load error = %v, want one naming APP_BASE_URL", err)
 	}
 }
+
+func TestLoad_PhotosAreOffWithoutCloudinaryAndOnWithAllThreeSettings(t *testing.T) {
+	values := withEmail(map[string]string{"DATABASE_URL": "postgres://localhost/mini", "JWT_SECRET": validSecret, "PORT": "8080"})
+	off, err := Load(envFrom(values))
+	if err != nil || off.PhotosEnabled() {
+		t.Fatalf("without Cloudinary: err %v, photos enabled %v; want no error and photos off", err, off.PhotosEnabled())
+	}
+
+	values["CLOUDINARY_CLOUD_NAME"], values["CLOUDINARY_API_KEY"], values["CLOUDINARY_API_SECRET"] = "minis", "key", "secret"
+	on, err := Load(envFrom(values))
+	if err != nil || !on.PhotosEnabled() {
+		t.Fatalf("with Cloudinary: err %v, photos enabled %v; want photos on", err, on.PhotosEnabled())
+	}
+}
+
+func TestLoad_RefusesHalfACloudinaryAccount(t *testing.T) {
+	values := withEmail(map[string]string{"DATABASE_URL": "postgres://localhost/mini", "JWT_SECRET": validSecret, "PORT": "8080"})
+	values["CLOUDINARY_CLOUD_NAME"] = "minis"
+
+	_, err := Load(envFrom(values))
+
+	if err == nil || !strings.Contains(err.Error(), "CLOUDINARY_API_SECRET") {
+		t.Fatalf("Load error = %v, want one naming the Cloudinary settings", err)
+	}
+}

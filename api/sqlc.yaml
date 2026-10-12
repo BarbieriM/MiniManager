@@ -15,6 +15,7 @@ overrides:
       user_role_member: userRoleMember
       miniature: miniatureRow
       invite: inviteRow
+      photo: photoRow
     # Plain Go types instead of pgtype wrappers.
     overrides:
       - db_type: uuid
@@ -94,3 +95,11 @@ sql:
         <<: *go
         package: invites
         out: internal/features/invites
+  - engine: postgresql
+    schema: migrations
+    queries: internal/features/photos/queries.sql
+    gen:
+      go:
+        <<: *go
+        package: photos
+        out: internal/features/photos
