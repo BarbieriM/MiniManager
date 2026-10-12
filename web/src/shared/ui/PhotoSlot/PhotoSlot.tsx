@@ -1,6 +1,7 @@
 import { useRef, type ReactElement } from 'react'
 import { photoTypes } from '../../lib/getPhotoError'
 import type { CreatureSize } from '../../lib/creatureSizes'
+import { Button } from '../Button/Button'
 import { BaseGlyph } from '../BaseGlyph/BaseGlyph'
 import { Icon } from '../Icon/Icon'
 import { IconButton } from '../IconButton/IconButton'
@@ -9,7 +10,8 @@ type PhotoSlotProps =
   | { state: 'empty'; creatureSize: CreatureSize; onFiles: (files: File[]) => void; disabled?: boolean }
   | { state: 'uploading'; creatureSize: CreatureSize; progress: number }
   | { state: 'uploaded'; creatureSize: CreatureSize; imageUrl?: string; alt: string; isCover: boolean; onSetCover?: () => void; onRemove?: () => void }
-  | { state: 'error'; message: string }
+  // onRetry tries the same file again (an upload that failed halfway); onDismiss clears the error.
+  | { state: 'error'; message: string; onRetry?: () => void; onDismiss?: () => void }
 
 const toolButtonClassName = 'size-11 -mt-px -ml-px border-rule-strong bg-raised md:size-8'
 
@@ -48,6 +50,18 @@ export function PhotoSlot(props: PhotoSlotProps): ReactElement {
         <span className="grid justify-items-center gap-1">
           <Icon name="alert" />
           <span className="type-dense">{props.message}</span>
+          <span className="flex gap-1">
+            {props.onRetry && (
+              <Button size="sm" variant="quiet" onClick={props.onRetry}>
+                Retry
+              </Button>
+            )}
+            {props.onDismiss && (
+              <Button size="sm" variant="quiet" onClick={props.onDismiss}>
+                Dismiss
+              </Button>
+            )}
+          </span>
         </span>
       </div>
     )

@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react'
 import { roleLabels } from '../../../shared/lib/roleLabels'
 import { problemMessage } from '../../../shared/lib/problemMessage'
-import { Button, DataCell, DataRow, DataTable, Dialog, MessageBox, Skeleton, StatusPill } from '../../../shared/ui'
+import { Button, DataCell, DataRow, DataTable, Dialog, MessageBox, SectionHeading, Skeleton, StatusPill } from '../../../shared/ui'
 import type { Invite } from '../api/Invite'
 import { useCancelInvite } from '../api/useCancelInvite'
 import { useInvites } from '../api/useInvites'
@@ -40,9 +40,7 @@ export function InvitesSection(): ReactElement {
 
   return (
     <section aria-labelledby="invites-heading" className="grid gap-3">
-      <h2 id="invites-heading" className="type-title">
-        Invites
-      </h2>
+      <SectionHeading id="invites-heading">Invites</SectionHeading>
       {failure && <MessageBox kind="error">{problemMessage(failure)}</MessageBox>}
       {invites.isPending && <Skeleton variant="table" />}
       {invites.isError && <MessageBox kind="error">The invites could not be loaded. Try again.</MessageBox>}

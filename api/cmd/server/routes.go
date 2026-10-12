@@ -13,6 +13,7 @@ import (
 	"github.com/BarbieriM/MiniManager/api/internal/features/invites"
 	"github.com/BarbieriM/MiniManager/api/internal/features/members"
 	"github.com/BarbieriM/MiniManager/api/internal/features/miniatures"
+	"github.com/BarbieriM/MiniManager/api/internal/features/photos"
 	"github.com/BarbieriM/MiniManager/api/internal/features/users"
 	platformauth "github.com/BarbieriM/MiniManager/api/internal/platform/auth"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/httpx"
@@ -24,6 +25,7 @@ type handlerDeps struct {
 	users        *users.Service
 	filters      *filters.Service
 	miniatures   *miniatures.Service
+	photos       *photos.Service
 	invites      *invites.Service
 	members      *members.Service
 	accessTokens *platformauth.AccessTokens
@@ -41,6 +43,7 @@ func newHandler(deps handlerDeps) http.Handler {
 	members.NewHandler(deps.members).Register(mux, requireUser)
 	miniatures.NewHandler(deps.miniatures).Register(mux, requireUser)
 	filters.NewHandler(deps.filters).Register(mux, requireUser)
+	photos.NewHandler(deps.photos).Register(mux, requireUser)
 
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteProblem(w, http.StatusNotFound, "There is no API endpoint at this path.")

@@ -18,6 +18,7 @@ const goblin: CatalogItem = {
   ownerInitials: 'RL',
   isOwnedByCurrentUser: false,
   storageLocation: 'Box 3',
+  coverThumbnailUrl: null,
 }
 
 describe('CatalogTable', () => {

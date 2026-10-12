@@ -194,7 +194,7 @@ The API is REST and JSON under `/api/v1`. Errors use the RFC 9457 `application/p
 | DELETE | /miniatures/{id} | owner, admin | Delete with its photos (5) |
 | POST | /miniatures/{id}/photos/signature | owner, admin | Get a signed Cloudinary upload (7) |
 | POST | /miniatures/{id}/photos | owner, admin | Register an uploaded photo (7) |
-| PATCH | /miniatures/{id}/photos/{photoId} | owner, admin | Set cover or order (7) |
+| PATCH | /miniatures/{id}/photos/{photoId} | owner, admin | Make it the cover (7); no reordering (clarified 2026-10-12) |
 | DELETE | /miniatures/{id}/photos/{photoId} | owner, admin | Remove a photo (7) |
 | GET | /filters | user | Filter definitions from the registry, with whole-Catalog option counts, so the UI draws controls automatically (6) |
 | GET | /tags | user | Tags in use, for the tag picker (6) |
@@ -485,5 +485,5 @@ Suggested build order inside the MVP:
 2. Miniature create, list, details, edit and delete with the version check.
 3. Filter registry and the 7 MVP filters, with filters stored in the URL.
 4. Roles enforced, invites, password reset by email, and edit profile (Card 3).
-5. Photos.
+5. Photos (Card 7), and the Catalog photo grid on desktop.
 6. Phone polish: bottom-sheet filters, camera upload, a real-device test.

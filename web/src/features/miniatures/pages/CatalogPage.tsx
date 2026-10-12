@@ -9,6 +9,7 @@ import {
   CatalogTable,
   EmptyState,
   FilterRail,
+  GridTile,
   MessageBox,
   MobileHeader,
   PageHeader,
@@ -16,7 +17,10 @@ import {
   ResultCount,
   Select,
   Skeleton,
+  TileGrid,
   Toolbar,
+  ViewToggle,
+  type CatalogView,
 } from '../../../shared/ui'
 import { useSession } from '../../auth/lib/useSession'
 import { ActiveFilters } from '../../filters/components/ActiveFilters'
@@ -59,11 +63,24 @@ export function CatalogPage(): ReactElement {
   const sort = searchParams.get('sort') ?? 'name'
   const activeFilterCount = countActiveFilters(searchParams, definitions)
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
+  // The desktop view lives in the URL like the filters (Card 6, clarified 2026-10-12); the table is the default.
+  const view: CatalogView = searchParams.get('view') === 'grid' ? 'grid' : 'table'
+  const catalogItems = catalog.data?.items.map((miniature) => toCatalogItem(miniature, user.id))
+  const sortSelect = <Select label="Sort" options={catalogSorts} value={sort} onChange={changeSort} />
   const filterProblems = refusedFilters(catalog.error)
   const clearFiltersButton = <Button onClick={() => setSearchParams(withoutFilters(searchParams, definitions))}>Clear filters</Button>
 
   function changeSort(nextSort: string): void {
     setSearchParams(withParameterValues(searchParams, 'sort', nextSort === 'name' ? [] : [nextSort]))
+  }
+
+  function changeView(nextView: CatalogView): void {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current)
+      if (nextView === 'grid') next.set('view', 'grid')
+      else next.delete('view')
+      return next
+    })
   }
 
   function goToPage(nextPage: number): void {
@@ -85,10 +102,13 @@ export function CatalogPage(): ReactElement {
         <PageHeader
           title="Catalog"
           action={
-            // Phones add from the bottom bar, which holds the screen's one vermilion element there.
-            <ButtonLink to="/minis/new" variant="primary" icon="plus" className="hidden md:inline-flex">
-              Add miniature
-            </ButtonLink>
+            // Phones always see cards, and add from the bottom bar, which holds the screen's one vermilion element.
+            <div className="hidden items-center gap-3 md:flex">
+              <ViewToggle value={view} onChange={changeView} />
+              <ButtonLink to="/minis/new" variant="primary" icon="plus">
+                Add miniature
+              </ButtonLink>
+            </div>
           }
         />
         {catalog.isPending && (
@@ -109,9 +129,11 @@ export function CatalogPage(): ReactElement {
               <Button icon="sliders" onClick={() => setIsFilterSheetOpen(true)}>
                 {activeFilterCount > 0 ? `Filters (${activeFilterCount})` : 'Filters'}
               </Button>
-              <Select label="Sort" options={catalogSorts} value={sort} onChange={changeSort} />
+              {sortSelect}
             </>
           }
+          // The grid has no sortable column headers, so it gets the Sort select on desktop too.
+          desktopActions={view === 'grid' && sortSelect}
         />
         <ActiveFilters definitions={definitions} query={searchParams} onChange={setSearchParams} />
         {filterProblems.length > 0 && (
@@ -129,20 +151,24 @@ export function CatalogPage(): ReactElement {
             Add the minis you own, and the whole group can see them.
           </EmptyState>
         )}
-        {catalog.data && catalog.data.total > 0 && (
+        {catalogItems && catalogItems.length > 0 && catalog.data && (
           <div className="grid gap-4">
             <ResultCount matchingCount={catalog.data.total} catalogTotal={isFiltering ? catalog.data.catalogTotal : undefined} />
             <div className="hidden md:block">
-              <CatalogTable
-                items={catalog.data.items.map((miniature) => toCatalogItem(miniature, user.id))}
-                sort={sort}
-                onSortChange={changeSort}
-              />
+              {view === 'grid' ? (
+                <TileGrid>
+                  {catalogItems.map((item) => (
+                    <GridTile key={item.id} item={item} />
+                  ))}
+                </TileGrid>
+              ) : (
+                <CatalogTable items={catalogItems} sort={sort} onSortChange={changeSort} />
+              )}
             </div>
             <ul className="-mx-4 border-t border-rule-strong md:hidden">
-              {catalog.data.items.map((miniature) => (
-                <li key={miniature.id}>
-                  <CatalogCard item={toCatalogItem(miniature, user.id)} />
+              {catalogItems.map((item) => (
+                <li key={item.id}>
+                  <CatalogCard item={item} />
                 </li>
               ))}
             </ul>

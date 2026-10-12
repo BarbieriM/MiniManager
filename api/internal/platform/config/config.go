@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+
+	"github.com/BarbieriM/MiniManager/api/internal/platform/images"
 )
 
 // minJWTSecretBytes matches the HS256 key size: a shorter secret is easier to brute-force.
@@ -25,6 +27,13 @@ type Config struct {
 	// development) is set.
 	ResendAPIKey   string
 	EmailOutboxDir string
+	// Cloudinary is the account for Photos (Card 7, ADR 0005): all three settings, or none, which leaves Photos off.
+	Cloudinary images.Account
+}
+
+// PhotosEnabled reports whether a Cloudinary account is configured.
+func (c Config) PhotosEnabled() bool {
+	return c.Cloudinary.CloudName != ""
 }
 
 // Load reads the server settings through getenv (os.Getenv in main) and reports every problem at once.
@@ -38,6 +47,12 @@ func Load(getenv func(string) string) (Config, error) {
 		AppBaseURL:     getenv("APP_BASE_URL"),
 		ResendAPIKey:   getenv("RESEND_API_KEY"),
 		EmailOutboxDir: getenv("EMAIL_OUTBOX_DIR"),
+
+		Cloudinary: images.Account{
+			CloudName: getenv("CLOUDINARY_CLOUD_NAME"),
+			APIKey:    getenv("CLOUDINARY_API_KEY"),
+			APISecret: getenv("CLOUDINARY_API_SECRET"),
+		},
 	}
 
 	var problems []error
@@ -62,8 +77,22 @@ func Load(getenv func(string) string) (Config, error) {
 	if (cfg.ResendAPIKey == "") == (cfg.EmailOutboxDir == "") {
 		problems = append(problems, errors.New("set exactly one of RESEND_API_KEY or EMAIL_OUTBOX_DIR"))
 	}
+	if set := countSet(cfg.Cloudinary.CloudName, cfg.Cloudinary.APIKey, cfg.Cloudinary.APISecret); set != 0 && set != 3 {
+		problems = append(problems, errors.New("set all of CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET, or none to leave photos off"))
+	}
 	if len(problems) > 0 {
 		return Config{}, fmt.Errorf("invalid config: %w", errors.Join(problems...))
 	}
 	return cfg, nil
+}
+
+// countSet counts the values that are not empty.
+func countSet(values ...string) int {
+	set := 0
+	for _, value := range values {
+		if value != "" {
+			set++
+		}
+	}
+	return set
 }

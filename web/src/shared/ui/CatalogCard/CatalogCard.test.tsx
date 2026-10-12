@@ -16,6 +16,7 @@ const ogre: CatalogItem = {
   ownerInitials: 'AN',
   isOwnedByCurrentUser: true,
   storageLocation: '',
+  coverThumbnailUrl: null,
 }
 
 describe('CatalogCard', () => {

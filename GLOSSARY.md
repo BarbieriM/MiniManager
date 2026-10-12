@@ -70,6 +70,10 @@ _Avoid_: Paint state, finish, Not painted
 A free label on a Miniature, optionally namespaced as `namespace:value` (for example `faction:drow`).
 _Avoid_: Label, keyword, category
 
+**Photo**:
+An image of a Miniature, so the group recognises the actual model. A Miniature has at most 3, kept in the order they were added; only someone who can change the Miniature adds or removes them.
+_Avoid_: Picture, image (in UI copy), attachment
+
 **Cover photo**:
-The one Photo of a Miniature that represents it in lists.
+The one Photo of a Miniature that represents it in lists. The first Photo added is the cover until another is chosen; when the cover is removed, the next Photo becomes it.
 _Avoid_: Thumbnail (that is only its display size), main image

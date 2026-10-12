@@ -3,7 +3,8 @@ import { mergeClassNames } from '../../lib/mergeClassNames'
 import type { CreatureSize } from '../../lib/creatureSizes'
 import { BaseGlyph } from '../BaseGlyph/BaseGlyph'
 
-type Photo = { id: string; url?: string; alt: string; isCover: boolean }
+// url is the full size; thumbnailUrl, when given, is the small one for the row of thumbs.
+type Photo = { id: string; url?: string; thumbnailUrl?: string; alt: string; isCover: boolean }
 
 type PhotoViewerProps = {
   photos: Photo[]
@@ -49,7 +50,7 @@ export function PhotoViewer({ photos, creatureSize }: PhotoViewerProps): ReactEl
               onClick={() => setShownIndex(photoIndex)}
               className={mergeClassNames('grid size-18 cursor-pointer place-items-center bg-sunken', photoIndex === shownIndex ? 'border-2 border-ink' : 'border border-rule')}
             >
-              {photo.url ? <img src={photo.url} alt="" className="size-full object-cover" /> : <BaseGlyph creatureSize={creatureSize} className="size-6 text-ink-2" />}
+              {photo.url ? <img src={photo.thumbnailUrl ?? photo.url} alt="" className="size-full object-cover" /> : <BaseGlyph creatureSize={creatureSize} className="size-6 text-ink-2" />}
             </button>
           ))}
         </div>

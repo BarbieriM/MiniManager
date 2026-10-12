@@ -297,6 +297,10 @@ refresh. Reassigning a deactivated User's minis is done one mini at a time in th
 The options in each filter show a count of matching minis in the whole Catalog; counts that follow the other active
 filters ("faceted") are a later change.
 
+*Clarified 2026-10-12:* on desktop the Catalog can also show a photo grid instead of the table (`?view=grid` in
+the URL, like the filters): each tile shows the cover Photo or the size placeholder, the Owner, the name, the size
+and the quantity, and a Sort select replaces the table's sortable headers.
+
 **Validations and error messages**
 
 - crMin above crMax: "Minimum CR cannot be higher than maximum CR."
@@ -335,6 +339,12 @@ filters ("faceted") are a later change.
 6. Deleting a photo or its mini removes the files from storage.
 7. Images are kept in an image storage service, never in the database; the database stores only the reference.
 8. A mini with no photo shows a placeholder based on its size.
+
+*Clarified 2026-10-12:* rule 4 means each Photo is *available* as a thumbnail and a full size: the original is
+stored as uploaded, so the server can check its real type and size, and both sizes are made from it when shown,
+turned upright and without location data; the untouched original is never delivered. Rule 5 drops reordering: Photos keep the order they were added, and someone who can edit the mini adds or
+removes them and chooses the cover. The real file type and size are checked by the server after the upload; a file
+that breaks them is deleted and refused with the messages below. Photo links are public but unguessable.
 
 **Validations and error messages**
 

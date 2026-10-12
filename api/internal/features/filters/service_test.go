@@ -12,6 +12,7 @@ import (
 
 	"github.com/BarbieriM/MiniManager/api/internal/features/filters"
 	"github.com/BarbieriM/MiniManager/api/internal/features/miniatures"
+	"github.com/BarbieriM/MiniManager/api/internal/features/photos"
 	"github.com/BarbieriM/MiniManager/api/internal/features/users"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/db/dbtest"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/validation"
@@ -42,7 +43,7 @@ func newFixture(t *testing.T) *fixture {
 	}
 	f := &fixture{pool: pool, users: userService, admin: admin, clock: time.Date(2026, 10, 11, 20, 0, 0, 0, time.UTC)}
 	f.filters = filters.NewService(pool, userService)
-	f.miniatures = miniatures.NewService(pool, userService, f.filters, func() time.Time { return f.clock })
+	f.miniatures = miniatures.NewService(pool, userService, f.filters, photos.NewGallery(pool, nil), func() time.Time { return f.clock })
 	return f
 }
 
