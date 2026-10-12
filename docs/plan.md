@@ -126,9 +126,10 @@ mini-manager/
       platform/               shared plumbing, no business rules
         config/  db/  httpx/  auth/  email/  images/  flags/
       features/
-        auth/                 Card 2: handler.go service.go queries.sql service_test.go
+        auth/                 Card 2, and changing a password (Card 3): handler.go service.go queries.sql service_test.go
         invites/              Card 1
         users/                Cards 3 and 4 (profile, roles, policy.go)
+        members/              Card 4's Members page: joins users (roles) and auth (ending Sessions)
         miniatures/           Card 5
         filters/              Card 6: registry.go + one file per filter
           name.go  creature_type.go  size.go  cr.go  owner.go  paint.go  tags.go  quantity.go
@@ -185,7 +186,7 @@ The API is REST and JSON under `/api/v1`. Errors use the RFC 9457 `application/p
 | GET | /admin/users | admin | Members page (4) |
 | PATCH | /admin/users/{id} | admin | Change role or deactivate (4) |
 | GET, PATCH | /me | user | Read and edit my profile (3) |
-| POST | /me/password | user | Change password (3) |
+| POST | /auth/password | user | Change password (3); under /auth so the refresh cookie says which Session to keep |
 | GET | /miniatures | user | List with filters, sort, paging (5, 6); the envelope adds `catalogTotal`, the unfiltered count, for "48 of 312 minis" |
 | POST | /miniatures | user | Create (5) |
 | GET | /miniatures/{id} | user | Details (5) |
@@ -483,6 +484,6 @@ Suggested build order inside the MVP:
 1. Skeleton: Go service serving a blank SPA, Postgres, migration 0001, seed Admin, login and logout, deployed by CI.
 2. Miniature create, list, details, edit and delete with the version check.
 3. Filter registry and the 7 MVP filters, with filters stored in the URL.
-4. Roles enforced, invites and password reset by email.
+4. Roles enforced, invites, password reset by email, and edit profile (Card 3).
 5. Photos.
 6. Phone polish: bottom-sheet filters, camera upload, a real-device test.

@@ -43,11 +43,20 @@ The database choice (PostgreSQL) is covered in section 4 of `plan.md`.
 6. Accepting an invite creates the user with the invite's role and logs them in.
 7. The first Admin is created by a seed command, not through the UI.
 
+*Clarified 2026-10-11:* inviting the email of a deactivated User is refused; the Admin reactivates them from the
+Members page instead (Card 4), so the edge case below means "reactivate", not "invite again". An invite is Pending,
+Accepted, Cancelled or Expired; Resend and Cancel work on Pending and Expired invites, and resending gives a fresh
+7-day link. The full link is shown to the Admin, with Copy, right after sending or resending (only its hash is
+stored), whether or not the email went out. Opening an invite link while logged in asks you to log out first. The
+sign-up display name follows Card 3 rule 5 (unique, ignoring case).
+
 **Validations and error messages**
 
 - Email already registered: "This person already has an account."
 - Expired, used or cancelled token: "This invite is no longer valid. Ask the admin for a new one."
 - Weak password: "Password must be 8 to 72 characters."
+- Deactivated User's email: "This person has a deactivated account. Reactivate them from Members." *(Clarified 2026-10-11.)*
+- Name already used: "Someone in the group already uses this name." *(Clarified 2026-10-11.)*
 
 **Edge cases:** an invite for the same email sent twice (the second replaces the first); the email service is down (the invite is saved and the admin can copy the link by hand); a user is deactivated and later re-invited (reactivate instead of creating a duplicate).
 
@@ -84,6 +93,10 @@ The database choice (PostgreSQL) is covered in section 4 of `plan.md`.
 9. Completing a reset revokes all of that user's refresh tokens (logs out every device).
 10. A deactivated user cannot log in or refresh.
 
+*Clarified 2026-10-11:* at most 3 reset emails are sent per User per hour; further requests, and requests for
+unknown or deactivated emails, get the same answer (rule 7) and send nothing. Completing a reset also clears the login
+lockout (rule 3) for that email.
+
 **Validations and error messages**
 
 - Wrong email or password: "Email or password is incorrect."
@@ -118,12 +131,13 @@ The database choice (PostgreSQL) is covered in section 4 of `plan.md`.
 2. Changing the password requires the correct current password.
 3. Changing the password revokes all other sessions of that user.
 4. Email cannot be changed in the MVP (it needs a verification flow); the Admin can fix it by hand if needed.
-5. Display names do not need to be unique, because the owner filter shows name and email.
+5. Display names are unique, ignoring case, because the owner filter and owner select show only the name. *(Changed 2026-10-11; it said names need not be unique.)*
 
 **Validations and error messages**
 
 - Wrong current password: "Current password is incorrect."
 - Name too short or long: "Name must be 2 to 40 characters."
+- Name already used: "Someone in the group already uses this name." *(Clarified 2026-10-11.)*
 
 **Edge cases:** saving with no changes (no-op, no error); new password equal to the old one (allowed).
 
@@ -156,6 +170,11 @@ The database choice (PostgreSQL) is covered in section 4 of `plan.md`.
 6. There must always be at least one active Admin; demoting or deactivating the last one is refused.
 7. Deactivating a user keeps their miniatures visible and still owned by them; an Admin can reassign them.
 8. Permissions are checked on the server for every request; hiding a button in the UI is never the only check.
+
+*Clarified 2026-10-11:* an Admin can also reactivate a deactivated User, who then logs in with their old password
+(or resets it). Deactivating ends all of that User's Sessions. An Admin cannot deactivate themself ("Ask another
+admin to deactivate you."). Role and active changes apply on the User's next request, not only at the next token
+refresh. Reassigning a deactivated User's minis is done one mini at a time in the edit form.
 
 **Validations and error messages**
 
