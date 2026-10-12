@@ -16,5 +16,6 @@ export function toCatalogItem(miniature: Miniature, currentUserId: string): Cata
     ownerInitials: initialsFromDisplayName(miniature.owner.displayName),
     isOwnedByCurrentUser: miniature.owner.id === currentUserId,
     storageLocation: miniature.storageLocation,
+    coverThumbnailUrl: miniature.coverThumbnailUrl,
   }
 }

@@ -2,6 +2,7 @@ import { useState, type ReactElement } from 'react'
 import { useParams } from 'react-router'
 import { creatureSizeLabels } from '../../../shared/lib/creatureSizes'
 import { creatureTypeLabels } from '../../../shared/lib/creatureTypes'
+import { photoAltText } from '../../../shared/lib/photoAltText'
 import { formatChallengeRating } from '../../../shared/lib/formatChallengeRating'
 import {
   BottomBar,
@@ -18,17 +19,17 @@ import {
   Tag,
 } from '../../../shared/ui'
 import { DeleteMiniatureDialog } from '../components/DeleteMiniatureDialog'
-import type { Miniature } from '../api/Miniature'
+import type { MiniatureDetails } from '../api/MiniatureDetails'
 import { MiniatureLoader } from '../components/MiniatureLoader'
 
 // MiniatureDetailsPage shows every field of one Miniature (Card 5). Its Owner and Admins get Edit and Delete;
 // everyone else gets a note saying who can (Card 4 acceptance criterion 1). canChange comes from the server.
 export function MiniatureDetailsPage(): ReactElement {
   const { id = '' } = useParams()
-  return <MiniatureLoader id={id}>{(details) => <MiniatureDetails details={details} />}</MiniatureLoader>
+  return <MiniatureLoader id={id}>{(details) => <MiniatureDetailsView details={details} />}</MiniatureLoader>
 }
 
-function MiniatureDetails({ details }: { details: Miniature }): ReactElement {
+function MiniatureDetailsView({ details }: { details: MiniatureDetails }): ReactElement {
   const [isDeleting, setIsDeleting] = useState(false)
   const actions = (
     <>
@@ -50,7 +51,25 @@ function MiniatureDetails({ details }: { details: Miniature }): ReactElement {
         </div>
         <PageHeader title={details.name} action={details.canChange && <div className="hidden gap-3 md:flex">{actions}</div>} />
         <div className="grid gap-6 md:grid-cols-2">
-          <PhotoViewer photos={[]} creatureSize={details.size} />
+          <div className="grid content-start gap-3">
+            <PhotoViewer
+              photos={details.photos.map((photo, index) => ({
+                id: photo.id,
+                url: photo.fullUrl,
+                thumbnailUrl: photo.thumbnailUrl,
+                alt: photoAltText(details.name, index),
+                isCover: photo.isCover,
+              }))}
+              creatureSize={details.size}
+            />
+            {details.canChange && details.photosEnabled && (
+              <div>
+                <ButtonLink to={`/minis/${details.id}/edit#photos`} icon="plus">
+                  Add photos
+                </ButtonLink>
+              </div>
+            )}
+          </div>
           <div className="grid content-start gap-4">
             <DefinitionList items={definitionItems(details)} />
             {!details.canChange && (
@@ -72,7 +91,7 @@ function MiniatureDetails({ details }: { details: Miniature }): ReactElement {
   )
 }
 
-function definitionItems(details: Miniature): { label: string; value: ReactElement | string }[] {
+function definitionItems(details: MiniatureDetails): { label: string; value: ReactElement | string }[] {
   const items: { label: string; value: ReactElement | string }[] = [
     { label: 'Owner', value: details.owner.displayName },
     { label: 'Type', value: creatureTypeLabels[details.creatureType] },

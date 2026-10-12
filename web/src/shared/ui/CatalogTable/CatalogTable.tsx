@@ -4,6 +4,7 @@ import { creatureSizeLabels } from '../../lib/creatureSizes'
 import { creatureTypeLabels } from '../../lib/creatureTypes'
 import { BaseGlyph } from '../BaseGlyph/BaseGlyph'
 import { ChallengeRatingStamp } from '../ChallengeRatingStamp/ChallengeRatingStamp'
+import { CoverThumbnail } from '../CoverThumbnail/CoverThumbnail'
 import { Icon } from '../Icon/Icon'
 import type { CatalogItem } from '../internal/CatalogItem'
 import { OwnerStamp } from '../OwnerStamp/OwnerStamp'
@@ -75,8 +76,8 @@ export function CatalogTable({ items, sort = 'name', onSortChange }: CatalogTabl
         </div>
         {items.map((item) => (
           <div key={item.id} role="row" className={`${rowClassName} min-h-11 border-b border-rule hover:bg-sunken`}>
-            <span role="cell">
-              <BaseGlyph creatureSize={item.creatureSize} />
+            <span role="cell" className="size-10 border border-rule">
+              <CoverThumbnail url={item.coverThumbnailUrl} creatureSize={item.creatureSize} miniatureName={item.name} placeholderSize="icon" />
             </span>
             <span role="cell" className="min-w-0 truncate">
               <Link to={`/minis/${item.id}`} className="type-body-strong text-ink hover:underline">

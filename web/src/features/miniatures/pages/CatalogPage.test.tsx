@@ -126,4 +126,44 @@ describe('CatalogPage', () => {
     await userEvent.click(screen.getByRole('option', { name: 'Newest first' }))
     await vi.waitFor(() => expect(listQueries.at(-1)?.get('sort')).toBe('-createdAt'))
   })
+
+  it('card 6: the photo grid view lives in the URL, shows tiles and gets a Sort select', async () => {
+    const listQueries = stubListing()
+    const { router } = renderAppAt('/?sort=-name&page=1')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Photo grid view' }))
+
+    expect(router.state.location.search).toContain('view=grid')
+    expect(router.state.location.search).toContain('sort=-name')
+    expect(screen.getByRole('button', { name: 'Photo grid view' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('columnheader', { name: /Name/ })).not.toBeInTheDocument()
+    // The phone select plus the one the grid adds on desktop.
+    expect(screen.getAllByRole('combobox', { name: 'Sort' })).toHaveLength(2)
+    // The view is the screen's own choice; the API is not asked about it.
+    expect(listQueries.every((query) => !query.has('view'))).toBe(true)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Table view' }))
+    expect(router.state.location.search).not.toContain('view')
+    expect(await screen.findByRole('columnheader', { name: /Name/ })).toBeInTheDocument()
+  })
+
+  it('card 7: shows each cover photo in the list, and the size placeholder without one', async () => {
+    stubFetch({
+      'POST /api/v1/auth/refresh': () => jsonResponse(200, sessionFor('Ana')),
+      'GET /api/v1/filters': () => jsonResponse(200, []),
+      'GET /api/v1/miniatures': () =>
+        jsonResponse(200, {
+          items: [miniatureFor('Goblin', { coverThumbnailUrl: 'https://images.test/goblin.jpg' }), miniatureFor('Ogre', { size: 'large' })],
+          total: 2,
+          page: 1,
+          pageSize: 24,
+          catalogTotal: 2,
+        }),
+    })
+    renderAppAt('/?view=grid')
+
+    const goblinCovers = await screen.findAllByRole('img', { name: 'Cover photo of Goblin' })
+    expect(goblinCovers[0]).toHaveAttribute('src', 'https://images.test/goblin.jpg')
+    expect(screen.queryByRole('img', { name: 'Cover photo of Ogre' })).not.toBeInTheDocument()
+  })
 })

@@ -72,4 +72,31 @@ describe('MiniatureDetailsPage', () => {
     expect(await screen.findByText('This miniature no longer exists.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Back to the Catalog' })).toHaveAttribute('href', '/')
   })
+
+  it('card 7: shows every photo large and offers the owner a way to change them', async () => {
+    const photos = [
+      { id: 'p1', thumbnailUrl: 'https://images.test/thumbnail/p1', fullUrl: 'https://images.test/full/p1', isCover: true },
+      { id: 'p2', thumbnailUrl: 'https://images.test/thumbnail/p2', fullUrl: 'https://images.test/full/p2', isCover: false },
+    ]
+    stubFetch({
+      'POST /api/v1/auth/refresh': () => jsonResponse(200, sessionFor('Ana')),
+      'GET /api/v1/miniatures/goblin-id': () => jsonResponse(200, miniatureFor('Goblin', { photos, photosEnabled: true })),
+    })
+    renderAppAt('/minis/goblin-id')
+
+    expect(await screen.findByRole('img', { name: 'Photo 1 of Goblin' })).toHaveAttribute('src', 'https://images.test/full/p1')
+    expect(screen.getByText('1 / 2')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Add photos' })).toHaveAttribute('href', '/minis/goblin-id/edit#photos')
+  })
+
+  it('card 7 rule 5: someone who cannot change the mini gets no photo link', async () => {
+    stubFetch({
+      'POST /api/v1/auth/refresh': () => jsonResponse(200, sessionFor('Bea')),
+      'GET /api/v1/miniatures/goblin-id': () => jsonResponse(200, miniatureFor('Goblin', { canChange: false, photosEnabled: true })),
+    })
+    renderAppAt('/minis/goblin-id')
+
+    expect(await screen.findByText('No photo yet')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /photos/ })).not.toBeInTheDocument()
+  })
 })

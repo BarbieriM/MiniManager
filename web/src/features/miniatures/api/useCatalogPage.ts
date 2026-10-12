@@ -9,6 +9,8 @@ import type { MiniatureListResponse } from './MiniatureListResponse'
 export function useCatalogPage(query: URLSearchParams): UseQueryResult<MiniatureListResponse> {
   const { request } = useSession()
   const listQuery = new URLSearchParams(query)
+  // The view (table or grid) is the screen's own choice, not something the API filters by.
+  listQuery.delete('view')
   if (!listQuery.has('pageSize')) listQuery.set('pageSize', String(catalogPageSize))
   listQuery.sort()
   const queryString = listQuery.toString()

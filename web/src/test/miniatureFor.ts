@@ -17,6 +17,10 @@ export function miniatureFor(name: string, overrides: Record<string, unknown> = 
     createdAt: '2026-10-11T20:00:00Z',
     updatedAt: '2026-10-11T20:00:00Z',
     canChange: true,
+    coverThumbnailUrl: null,
+    // Details only: the list leaves these out. Photos are off unless a test turns them on.
+    photos: [],
+    photosEnabled: false,
     ...overrides,
   }
 }

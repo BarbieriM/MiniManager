@@ -2,7 +2,7 @@ import { useState, type ReactElement } from 'react'
 import { Navigate } from 'react-router'
 import { initialsFromDisplayName } from '../../../shared/lib/initialsFromDisplayName'
 import { roleLabels } from '../../../shared/lib/roleLabels'
-import { Button, DataCell, DataRow, DataTable, MessageBox, MobileHeader, MobileListRow, PageBody, PageHeader, Person, Skeleton } from '../../../shared/ui'
+import { Button, DataCell, DataRow, DataTable, MessageBox, MobileHeader, MobileListRow, PageBody, PageHeader, Person, SectionHeading, Skeleton } from '../../../shared/ui'
 import { useSession } from '../../auth/lib/useSession'
 import { InviteDialog } from '../../invites/components/InviteDialog'
 import { InvitesSection } from '../../invites/components/InvitesSection'
@@ -53,9 +53,7 @@ function AdminMembersPage({ currentUserId }: { currentUserId: string }): ReactEl
           }
         />
         <section aria-labelledby="users-heading" className="grid gap-3">
-          <h2 id="users-heading" className="type-title">
-            Users
-          </h2>
+          <SectionHeading id="users-heading">Users</SectionHeading>
           {members.isPending && <Skeleton variant="table" />}
           {members.isError && <MessageBox kind="error">The members could not be loaded. Try again.</MessageBox>}
           {members.data && (

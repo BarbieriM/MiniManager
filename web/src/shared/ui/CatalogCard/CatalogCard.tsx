@@ -2,6 +2,7 @@ import type { ReactElement } from 'react'
 import { Link } from 'react-router'
 import { BaseGlyph } from '../BaseGlyph/BaseGlyph'
 import { ChallengeRatingStamp } from '../ChallengeRatingStamp/ChallengeRatingStamp'
+import { CoverThumbnail } from '../CoverThumbnail/CoverThumbnail'
 import type { CatalogItem } from '../internal/CatalogItem'
 import { OwnerStamp } from '../OwnerStamp/OwnerStamp'
 import { PaintMark } from '../PaintMark/PaintMark'
@@ -16,8 +17,8 @@ type CatalogCardProps = {
 export function CatalogCard({ item }: CatalogCardProps): ReactElement {
   return (
     <Link to={`/minis/${item.id}`} className="flex min-h-24 items-center gap-3 border-b border-rule px-4 py-3 text-ink">
-      <span className="grid size-18 shrink-0 place-items-center border border-rule-strong">
-        <BaseGlyph creatureSize={item.creatureSize} size="placeholder" />
+      <span className="size-18 shrink-0 border border-rule-strong">
+        <CoverThumbnail url={item.coverThumbnailUrl} creatureSize={item.creatureSize} miniatureName={item.name} />
       </span>
       <span className="grid min-w-0 flex-1 gap-2">
         <span className="type-body-strong truncate">{item.name}</span>

@@ -20,4 +20,6 @@ export type Miniature = {
   createdAt: string
   updatedAt: string
   canChange: boolean
+  // coverThumbnailUrl is the cover Photo at list size, or null without Photos (Card 7 rule 8).
+  coverThumbnailUrl: string | null
 }

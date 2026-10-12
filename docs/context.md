@@ -253,7 +253,7 @@ Library test for behaviour (not snapshots). Keep variant styles in a `variants` 
 | `Textarea` | Counter (notes ≤ 1000). |
 | `Segmented` | Two-way (Match any / Match all) and three-way (paint status in forms: Unpainted / Pre-painted / Hand-painted). Equal segments, selected = ink fill. Never a dropdown for three options. |
 | `Checkbox`, `CheckboxList` | List rows with counts in mono, ≥ 44 px rows on phone. |
-| `FileDrop` / `PhotoSlot` | 128 px slot: empty (base glyph), uploading (progress), uploaded, cover badge (`type-label` on ink), error; tools are 44 px on phone. |
+| `FileDrop` / `PhotoSlot` | 128 px slot: empty (base glyph), uploading (progress), uploaded, cover badge (`type-label` on ink), error with optional Retry and Dismiss; tools are 44 px on phone. |
 | `Tabs` | Ink underline on the current tab, never colour. |
 | `StepIndicator` | Later only (CSV import). |
 
@@ -280,7 +280,10 @@ Library test for behaviour (not snapshots). Keep variant styles in a `variants` 
 | --- | --- |
 | `CatalogTable` | Desktop default. 44 px rows, `border-rule` between rows, `border-rule-strong` on top. Columns: cover, name, size (glyph + word), type, CR, paint, owner, qty, location, actions. Sortable headers with direction indicator. Row actions (edit, delete) appear on hover/focus **only if the policy allows** (own mini or admin). Selected row `bg-sunken`. Horizontal scroll under 1040 px. |
 | `CatalogCard` | Mobile list item: 72 px thumb, name (`type-body-strong`), base glyph, CR stamp, paint mark, owner stamp, qty; ≥ 96 px tall, whole card is the link. |
-| `GridTile` | Photo-first desktop alternative, toggled from the toolbar. |
+| `GridTile` | Photo-first desktop alternative, toggled from the page header (`?view=grid`): square cover or size placeholder with the Owner stamp, name, size and quantity; the whole tile is the link. No CR stamp or paint mark (decided 2026-10-12). |
+| `TileGrid` / `ViewToggle` | The photo grid's columns (3, then 4 at `lg`, 5 at `xl`) and the Table/Photo grid toggle in the Catalog's page header (desktop only). |
+| `CoverThumbnail` | Fills its box with a Miniature's cover thumbnail, or the size placeholder without one (Card 7 rule 8); used by the table, the cards and the tiles. |
+| `SectionHeading` | `type-title` heading of one section of a screen, with the id the section names itself by (Photos, Users, Invites). |
 | `FilterRail` (desktop, 280 px) and `FilterSheet` (mobile) | Render controls from `GET /api/v1/filters` definitions (Card 6); groups collapse; active filters appear as `FilterChip`s above results with "Clear all". Chip hover for removal turns accent. `shared/ui/FilterRail` is the column frame; the phone sheet is a `Sheet`; `features/filters` draws the controls. |
 | `FilterGroup` | One filter in the rail or sheet: groups sit flush, split by a `border-rule` line; the heading (`type-label`, 44 px) has a chevron on the right and opens or closes the controls. |
 | `FilterChipRow` | Wrapping row of `FilterChip`s and "Clear all" above the results. |
