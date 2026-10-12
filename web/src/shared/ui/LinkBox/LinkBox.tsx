@@ -25,7 +25,7 @@ export function LinkBox({ url }: LinkBoxProps): ReactElement {
   }
 
   return (
-    <div className="flex min-h-13 items-center gap-2 border border-rule-strong bg-sunken py-0.75 pr-0.75 pl-3">
+    <div className="flex min-h-13 min-w-0 items-center gap-2 border border-rule-strong bg-sunken py-0.75 pr-0.75 pl-3">
       <code className="type-mono flex min-w-0 flex-1" title={url}>
         <span className="truncate">{linkStart}</span>
         <span className="shrink-0">{linkEnd}</span>

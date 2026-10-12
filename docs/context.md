@@ -271,6 +271,8 @@ Library test for behaviour (not snapshots). Keep variant styles in a `variants` 
 | `EmptyState` | One line, one sentence, one action, a single ink line drawing of a base glyph. |
 | `StatusPill` | Invite status only: Pending (dashed outline + open circle), Accepted (check), Expired (clock), Cancelled (cross). All ink. |
 | `LinkBox` | Mono link truncated in the middle with Copy inside the box (invite link when email is down). |
+| `PageBody` | The padded column under a logged-in screen's header: sections 24 px apart, 16 px gutters on phones, 24 px on desktop. |
+| `AuthLayout` | The logged-out screens (log in, accept invite, forgot and reset password): wordmark panel on desktop, one 420 px column with title and intro. |
 
 ### Catalog and layout pieces
 
@@ -292,7 +294,7 @@ Library test for behaviour (not snapshots). Keep variant styles in a `variants` 
 | `Breadcrumbs`, `PageHeader` (desktop) | Last crumb is not a link; header holds display title, one mono meta line, the single primary action. |
 | `DefinitionList` | Details page "ledger entry": small-caps label left, value right, hairline between rows. |
 | `PhotoViewer` | One large photo with cover badge and "1 / 3" count, row of 72 px thumbs; current thumb has a 2 px ink border; no photo shows the base glyph + "No photo yet". |
-| `DataRow` / `MobileListRow` | Members and invites: 56 px ruled rows with a mono email line; on phones stacked with full-width action buttons. |
+| `DataRow` / `MobileListRow` | Members and invites: 56 px ruled rows with a mono email line; on phones stacked with full-width action buttons. `DataTable` takes a `label` that names the table for screen readers. |
 | `RowLinkList` | Profile links on phone (Change password, Members for admins, Log out): 48 px rows with chevron. |
 
 ## Screens and routes (MVP)

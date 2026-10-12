@@ -7,6 +7,7 @@ import { requestLogin } from '../api/requestLogin'
 import { requestLogout } from '../api/requestLogout'
 import { requestRefresh } from '../api/requestRefresh'
 import type { SessionResponse } from '../api/SessionResponse'
+import type { SessionUser } from '../api/SessionUser'
 
 type SessionState = { status: 'checking' } | { status: 'loggedOut' } | { status: 'loggedIn'; session: SessionResponse }
 
@@ -24,6 +25,10 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
   const logInWith = useCallback((session: SessionResponse): void => {
     accessTokenRef.current = session.accessToken
     setState({ status: 'loggedIn', session })
+  }, [])
+
+  const updateUser = useCallback((user: SessionUser): void => {
+    setState((current) => (current.status === 'loggedIn' ? { status: 'loggedIn', session: { ...current.session, user } } : current))
   }, [])
 
   const forgetSession = useCallback((): void => {
@@ -76,11 +81,11 @@ export function AuthProvider({ children }: { children: ReactNode }): ReactElemen
 
   const value = useMemo((): AuthContextValue => {
     if (state.status === 'loggedIn') {
-      return { status: 'loggedIn', user: state.session.user, request, logOut }
+      return { status: 'loggedIn', user: state.session.user, request, logOut, updateUser }
     }
-    if (state.status === 'loggedOut') return { status: 'loggedOut', logIn }
+    if (state.status === 'loggedOut') return { status: 'loggedOut', logIn, startSession: logInWith }
     return { status: 'checking' }
-  }, [state, logIn, logOut, request])
+  }, [state, logIn, logOut, request, updateUser, logInWith])
 
   return <AuthContext value={value}>{children}</AuthContext>
 }

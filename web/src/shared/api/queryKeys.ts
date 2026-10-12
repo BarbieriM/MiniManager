@@ -10,4 +10,8 @@ export const queryKeys = {
   ownerOptions: ['users', 'options'] as const,
   filterDefinitions: ['filters'] as const,
   tagsInUse: ['tags'] as const,
+  // inviteCheck is the invitee's view of one invite link, before signing up.
+  inviteCheck: (token: string) => ['invites', 'check', token] as const,
+  invites: ['admin', 'invites'] as const,
+  members: ['admin', 'users'] as const,
 }

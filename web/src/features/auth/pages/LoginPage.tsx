@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
 import { ApiProblem } from '../../../shared/api/ApiProblem'
-import { Button, Field, MessageBox, PasswordInput, TextInput, Wordmark } from '../../../shared/ui'
+import { AuthLayout, Button, ButtonLink, Field, MessageBox, PasswordInput, TextInput } from '../../../shared/ui'
 import { useAuth } from '../lib/useAuth'
 
 const loginSchema = z.object({
@@ -34,8 +34,9 @@ export function LoginPage(): ReactElement {
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } })
 
-  // Where to go after logging in: the page (and its query) RequireAuth sent the User away from.
-  const fromState = (location.state as { from?: string } | null)?.from
+  // Where to go after logging in: the page (and its query) RequireAuth sent the User away from. notice is a
+  // message from the page that sent the User here, such as "Password updated" after a reset.
+  const { from: fromState, notice } = (location.state as { from?: string; notice?: string } | null) ?? {}
   const destination = fromState && !fromState.startsWith('/login') ? fromState : '/'
 
   // Also reached right after a successful login, when the Session state changes before navigate runs.
@@ -64,34 +65,26 @@ export function LoginPage(): ReactElement {
   }
 
   return (
-    <main className="grid min-h-dvh md:grid-cols-2">
-      <aside className="hidden border-r border-rule-strong bg-sunken p-12 md:block">
-        <Wordmark size="lg" />
-      </aside>
-      <div className="flex flex-col gap-8 px-4 py-8 md:justify-center md:px-12">
-        <div className="md:hidden">
-          <Wordmark size="lg" />
+    <AuthLayout title="Log in" intro="Use the email your invitation was sent to.">
+      <form noValidate onSubmit={handleSubmit(logIn)} className="grid gap-6">
+        {notice && !failure && <MessageBox kind="ok">{notice}</MessageBox>}
+        {failure && <MessageBox kind="error">{failure.message}</MessageBox>}
+        <div className="grid gap-4">
+          <Field label="Email" errorMessage={errors.email?.message}>
+            <TextInput type="email" autoComplete="email" placeholder="you@example.com" disabled={isSubmitting} {...register('email', { onChange: clearLock })} />
+          </Field>
+          <Field label="Password" errorMessage={errors.password?.message}>
+            <PasswordInput autoComplete="current-password" disabled={isSubmitting} {...register('password')} />
+          </Field>
         </div>
-        <form noValidate onSubmit={handleSubmit(logIn)} className="grid w-full max-w-105 gap-6">
-          <div className="grid gap-2">
-            <h1 className="type-display-m md:type-display">Log in</h1>
-            <p className="text-ink-2">Use the email your invitation was sent to.</p>
-          </div>
-          {failure && <MessageBox kind="error">{failure.message}</MessageBox>}
-          <div className="grid gap-4">
-            <Field label="Email" errorMessage={errors.email?.message}>
-              <TextInput type="email" autoComplete="email" placeholder="you@example.com" disabled={isSubmitting} {...register('email', { onChange: clearLock })} />
-            </Field>
-            <Field label="Password" errorMessage={errors.password?.message}>
-              <PasswordInput autoComplete="current-password" disabled={isSubmitting} {...register('password')} />
-            </Field>
-          </div>
-          <Button type="submit" variant="primary" fullWidth isLoading={isSubmitting} disabled={failure?.isLocked}>
-            {isSubmitting ? 'Logging in' : 'Log in'}
-          </Button>
-          <p className="type-dense text-ink-2">Invite only. To get an account, ask an admin for an invitation.</p>
-        </form>
-      </div>
-    </main>
+        <Button type="submit" variant="primary" fullWidth isLoading={isSubmitting} disabled={failure?.isLocked}>
+          {isSubmitting ? 'Logging in' : 'Log in'}
+        </Button>
+        <ButtonLink to="/forgot-password" variant="quiet" fullWidth>
+          Forgot password?
+        </ButtonLink>
+        <p className="type-dense text-ink-2">Invite only. To get an account, ask an admin for an invitation.</p>
+      </form>
+    </AuthLayout>
   )
 }
