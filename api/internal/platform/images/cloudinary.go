@@ -52,11 +52,13 @@ type Details struct {
 	Height int
 }
 
-// Account is one Cloudinary account's settings. The secret signs on the server only.
+// Account is one Cloudinary account's settings. The secret signs on the server only. Folder, when set, is put in
+// front of every name, so environments sharing the account (prod, dev) never touch each other's files.
 type Account struct {
 	CloudName string
 	APIKey    string
 	APISecret string
+	Folder    string
 }
 
 // Cloudinary is the client for one Account. APIBase, DeliveryBase, Client and Now are set by NewCloudinary and
@@ -80,7 +82,7 @@ func NewCloudinary(account Account) *Cloudinary {
 func (c *Cloudinary) SignUpload(name string) SignedUpload {
 	signed := map[string]string{
 		"overwrite": "false",
-		"public_id": name,
+		"public_id": c.inFolder(name),
 		"timestamp": strconv.FormatInt(c.Now().Unix(), 10),
 	}
 	fields := map[string]string{"api_key": c.APIKey, "signature": c.signature(signed)}
@@ -108,7 +110,7 @@ func (c *Cloudinary) signature(parameters map[string]string) string {
 
 // Details reads the real format, size and dimensions of the stored image name.
 func (c *Cloudinary) Details(ctx context.Context, name string) (Details, error) {
-	response, err := c.adminRequest(ctx, http.MethodGet, "/resources/image/upload/"+name, nil)
+	response, err := c.adminRequest(ctx, http.MethodGet, "/resources/image/upload/"+c.inFolder(name), nil)
 	if err != nil {
 		return Details{}, err
 	}
@@ -128,12 +130,12 @@ func (c *Cloudinary) Details(ctx context.Context, name string) (Details, error) 
 
 // Delete removes the stored image name. A name that is already gone is not an error.
 func (c *Cloudinary) Delete(ctx context.Context, name string) error {
-	return c.deleteWhere(ctx, url.Values{"public_ids[]": {name}})
+	return c.deleteWhere(ctx, url.Values{"public_ids[]": {c.inFolder(name)}})
 }
 
 // DeleteFolder removes every stored image whose name starts with folder/, such as all of one Miniature's Photos.
 func (c *Cloudinary) DeleteFolder(ctx context.Context, folder string) error {
-	return c.deleteWhere(ctx, url.Values{"prefix": {strings.TrimSuffix(folder, "/") + "/"}})
+	return c.deleteWhere(ctx, url.Values{"prefix": {c.inFolder(strings.TrimSuffix(folder, "/")) + "/"}})
 }
 
 func (c *Cloudinary) deleteWhere(ctx context.Context, query url.Values) error {
@@ -156,7 +158,15 @@ func (c *Cloudinary) FullURL(name string) string {
 }
 
 func (c *Cloudinary) deliveryURL(transformation, name string) string {
-	return fmt.Sprintf("%s/%s/image/upload/%s/%s", c.DeliveryBase, c.CloudName, transformation, name)
+	return fmt.Sprintf("%s/%s/image/upload/%s/%s", c.DeliveryBase, c.CloudName, transformation, c.inFolder(name))
+}
+
+// inFolder puts the account's Folder, if any, in front of name.
+func (c *Cloudinary) inFolder(name string) string {
+	if c.Folder == "" {
+		return name
+	}
+	return strings.Trim(c.Folder, "/") + "/" + name
 }
 
 func (c *Cloudinary) apiURL(path string) string {

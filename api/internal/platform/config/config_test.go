@@ -51,7 +51,7 @@ func TestLoad_ReportsEveryMissingVariable(t *testing.T) {
 	if err == nil {
 		t.Fatal("Load returned no error for an empty environment")
 	}
-	for _, name := range []string{"DATABASE_URL", "JWT_SECRET", "PORT", "EMAIL_FROM", "APP_BASE_URL", "RESEND_API_KEY or EMAIL_OUTBOX_DIR"} {
+	for _, name := range []string{"DATABASE_URL", "JWT_SECRET", "PORT", "EMAIL_FROM", "APP_BASE_URL", "BREVO_API_KEY, RESEND_API_KEY or EMAIL_OUTBOX_DIR"} {
 		if !strings.Contains(err.Error(), name) {
 			t.Errorf("error %q does not name %s", err, name)
 		}
@@ -73,8 +73,8 @@ func TestLoad_ReadsTheEmailSettings(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load returned error: %v", err)
 	}
-	if got.EmailFrom != "Mini Manager <minis@example.com>" || got.AppBaseURL != "http://localhost:5173" || got.EmailOutboxDir != "tmp/outbox" {
-		t.Errorf("email settings = %q, %q, %q", got.EmailFrom, got.AppBaseURL, got.EmailOutboxDir)
+	if got.Email.From != "Mini Manager <minis@example.com>" || got.AppBaseURL != "http://localhost:5173" || got.Email.OutboxDir != "tmp/outbox" {
+		t.Errorf("email settings = %+v, base URL %q", got.Email, got.AppBaseURL)
 	}
 }
 
@@ -82,8 +82,8 @@ func TestLoad_RefusesBothResendAndTheOutbox(t *testing.T) {
 	values := withEmail(map[string]string{"DATABASE_URL": "postgres://localhost/mini", "JWT_SECRET": validSecret, "PORT": "8080"})
 	values["RESEND_API_KEY"] = "re_test"
 	_, err := Load(envFrom(values))
-	if err == nil || !strings.Contains(err.Error(), "RESEND_API_KEY or EMAIL_OUTBOX_DIR") {
-		t.Fatalf("Load error = %v, want one about choosing RESEND_API_KEY or EMAIL_OUTBOX_DIR", err)
+	if err == nil || !strings.Contains(err.Error(), "BREVO_API_KEY, RESEND_API_KEY or EMAIL_OUTBOX_DIR") {
+		t.Fatalf("Load error = %v, want one about choosing one email sender", err)
 	}
 }
 
@@ -118,5 +118,40 @@ func TestLoad_RefusesHalfACloudinaryAccount(t *testing.T) {
 
 	if err == nil || !strings.Contains(err.Error(), "CLOUDINARY_API_SECRET") {
 		t.Fatalf("Load error = %v, want one naming the Cloudinary settings", err)
+	}
+}
+
+func TestLoad_ProductionSendsThroughBrevoAlone(t *testing.T) {
+	values := withEmail(map[string]string{"DATABASE_URL": "postgres://localhost/mini", "JWT_SECRET": validSecret, "PORT": "8080"})
+	values["EMAIL_OUTBOX_DIR"] = ""
+	values["BREVO_API_KEY"] = "xkeysib-test"
+
+	got, err := Load(envFrom(values))
+
+	if err != nil || got.Email.BrevoAPIKey != "xkeysib-test" {
+		t.Fatalf("Load = %+v, %v; want the Brevo key and no error", got.Email, err)
+	}
+}
+
+func TestLoad_ReadsTheOptionalCloudinaryFolder(t *testing.T) {
+	values := withEmail(map[string]string{"DATABASE_URL": "postgres://localhost/mini", "JWT_SECRET": validSecret, "PORT": "8080"})
+	values["CLOUDINARY_CLOUD_NAME"], values["CLOUDINARY_API_KEY"], values["CLOUDINARY_API_SECRET"] = "minis", "key", "secret"
+	values["CLOUDINARY_FOLDER"] = "prod"
+
+	got, err := Load(envFrom(values))
+
+	if err != nil || got.Cloudinary.Folder != "prod" {
+		t.Fatalf("Load = %+v, %v; want folder prod", got.Cloudinary, err)
+	}
+}
+
+func TestLoad_RefusesAnEmailFromThatIsNotAnAddress(t *testing.T) {
+	values := withEmail(map[string]string{"DATABASE_URL": "postgres://localhost/mini", "JWT_SECRET": validSecret, "PORT": "8080"})
+	values["EMAIL_FROM"] = "Mini Manager"
+
+	_, err := Load(envFrom(values))
+
+	if err == nil || !strings.Contains(err.Error(), "EMAIL_FROM") {
+		t.Fatalf("Load error = %v, want one naming EMAIL_FROM", err)
 	}
 }

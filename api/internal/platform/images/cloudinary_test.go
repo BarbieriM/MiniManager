@@ -132,3 +132,33 @@ func TestCloudinary_BuildsTheThumbnailAndFullSizeLinks(t *testing.T) {
 		t.Errorf("full size = %q", got)
 	}
 }
+
+func TestCloudinary_AFolderKeepsAnEnvironmentsFilesApart(t *testing.T) {
+	var requests []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests = append(requests, r.URL.Path+"?"+r.URL.RawQuery)
+		_ = json.NewEncoder(w).Encode(map[string]any{"format": "jpg", "bytes": 1, "width": 1, "height": 1})
+	}))
+	defer server.Close()
+	cloudinary := newTestCloudinary(server.URL, server.Client())
+	cloudinary.Folder = "prod"
+
+	signed := cloudinary.SignUpload("minis/m1/p1")
+	if _, err := cloudinary.Details(t.Context(), "minis/m1/p1"); err != nil {
+		t.Fatalf("Details: %v", err)
+	}
+	if err := cloudinary.DeleteFolder(t.Context(), "minis/m1"); err != nil {
+		t.Fatalf("DeleteFolder: %v", err)
+	}
+
+	if signed.Fields["public_id"] != "prod/minis/m1/p1" {
+		t.Errorf("signed name = %q", signed.Fields["public_id"])
+	}
+	if !strings.HasSuffix(cloudinary.ThumbnailURL("minis/m1/p1"), "/prod/minis/m1/p1") {
+		t.Errorf("thumbnail = %q", cloudinary.ThumbnailURL("minis/m1/p1"))
+	}
+	want := []string{"/v1_1/minis/resources/image/upload/prod/minis/m1/p1?", "/v1_1/minis/resources/image/upload?prefix=prod%2Fminis%2Fm1%2F"}
+	if strings.Join(requests, "\n") != strings.Join(want, "\n") {
+		t.Errorf("requests = %q, want %q", requests, want)
+	}
+}

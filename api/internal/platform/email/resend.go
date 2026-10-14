@@ -12,7 +12,7 @@ import (
 // resendEndpoint is Resend's send-email API.
 const resendEndpoint = "https://api.resend.com/emails"
 
-// sendTimeout keeps a slow Resend from holding a request open.
+// sendTimeout keeps a slow email service from holding a request open.
 const sendTimeout = 10 * time.Second
 
 // Resend sends through the Resend API with plain net/http (no SDK, docs/plan.md).
@@ -48,13 +48,13 @@ func (r *Resend) Send(ctx context.Context, message Message) error {
 		return fmt.Errorf("send email: %w", err)
 	}
 	defer response.Body.Close()
-	return checkStatus(response)
+	return checkStatus("resend", response)
 }
 
-// checkStatus turns a non-2xx response into an error that names only the status.
-func checkStatus(response *http.Response) error {
+// checkStatus turns a non-2xx response from service into an error that names only the status.
+func checkStatus(service string, response *http.Response) error {
 	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return fmt.Errorf("send email: resend answered %d", response.StatusCode)
+		return fmt.Errorf("send email: %s answered %d", service, response.StatusCode)
 	}
 	return nil
 }
