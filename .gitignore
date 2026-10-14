@@ -5,3 +5,7 @@
 
 # air live-reload build output
 api/tmp/
+
+# Playwright output
+web/test-results/
+web/playwright-report/

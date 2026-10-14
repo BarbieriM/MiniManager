@@ -5,7 +5,7 @@ export
 
 GOOSE = go tool goose -dir migrations postgres "$(DATABASE_URL)"
 
-.PHONY: dev dev-api dev-web db test lint sqlc migrate-new migrate migrate-status seed
+.PHONY: dev dev-api dev-web db test e2e lint sqlc migrate-new migrate migrate-status seed
 
 ## dev: start the local database, the API with live reload and the Vite dev server
 dev: db
@@ -29,6 +29,10 @@ test: export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE ?= /var/run/docker.sock
 test:
 	cd api && go test ./...
 	cd web && corepack yarn test
+
+## e2e: Playwright main flows at 390 px, against a throwaway database and API (scripts/e2e.sh)
+e2e:
+	./scripts/e2e.sh
 
 ## lint: sqlc diff (generated code up to date), go vet, staticcheck, gofmt check, then oxlint and the TypeScript check
 lint:

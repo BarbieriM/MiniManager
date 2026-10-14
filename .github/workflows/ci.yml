@@ -40,9 +40,44 @@ jobs:
       - name: Test
         run: make test
 
+  e2e:
+    name: End-to-end tests
+    needs: [check]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install web dependencies and the browser
+        working-directory: web
+        run: |
+          corepack enable
+          yarn install --immutable
+          yarn playwright install --with-deps chromium
+
+      # scripts/e2e.sh starts the compose Postgres, a throwaway database, the API and Vite, then runs Playwright.
+      - name: Run the main flows at phone size
+        run: ./scripts/e2e.sh
+
+      - name: Keep the failure screenshots and traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: web/test-results
+          retention-days: 7
+
   image:
     name: Build image
-    needs: [check]
+    needs: [check, e2e]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

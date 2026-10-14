@@ -8,7 +8,8 @@ export default defineConfig({
     // Fail when 5173 is taken instead of moving to another port, so the app's URL never changes silently.
     strictPort: true,
     proxy: {
-      '/api': 'http://localhost:8080',
+      // The end-to-end tests point this at their own API (scripts/e2e.sh); `make dev` uses the default.
+      '/api': process.env.API_PROXY_TARGET ?? 'http://localhost:8080',
     },
   },
   test: {
