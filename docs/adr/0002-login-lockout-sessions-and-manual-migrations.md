@@ -36,7 +36,9 @@ either broke a card rule or would cause problems in normal use:
 - **Manual migrations:** nothing applies migrations automatically. Mateus runs `make migrate` after reviewing a
   migration, against Neon before merging the PR that contains it. On startup the server and the seed compare
   the database's version with the migrations embedded in the binary, and refuse to run if any are pending.
-  Tests apply migrations only to throwaway testcontainers databases.
+  Tests apply migrations only to throwaway databases: testcontainers databases for the Go tests, and
+  `mini_manager_e2e` on the local compose Postgres for the end-to-end tests (`scripts/e2e.sh` creates it fresh and
+  drops it after every run; amended 2026-10-14). A database someone keeps is never migrated by a test.
 
 ## Alternatives
 
