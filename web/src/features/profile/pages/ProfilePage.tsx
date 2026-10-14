@@ -54,7 +54,7 @@ export function ProfilePage(): ReactElement | null {
   ]
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex min-h-full flex-1 flex-col">
       <MobileHeader />
       <PageBody>
         <div className="flex items-center gap-4">

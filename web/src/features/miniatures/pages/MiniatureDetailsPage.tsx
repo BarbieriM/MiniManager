@@ -80,7 +80,7 @@ function MiniatureDetailsView({ details }: { details: MiniatureDetails }): React
       </div>
       {/* Owners and Admins get Edit and Delete pinned at the bottom instead of the bottom bar (docs/context.md). */}
       {details.canChange ? (
-        <StickyActionBar twoColumns className="sticky bottom-0 md:hidden">
+        <StickyActionBar twoColumns>
           {actions}
         </StickyActionBar>
       ) : (

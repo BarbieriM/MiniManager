@@ -13,16 +13,19 @@ type DataTableProps = {
 // DataTable is a plain ruled table for admin lists (Members, Invites): a sunken header row and 56 px rows.
 // Each row is a DataRow; the column template travels to the rows as the --cols CSS variable.
 export function DataTable({ label, gridTemplateColumns, headers, children }: DataTableProps): ReactElement {
+  // A table wider than the screen scrolls sideways inside this box, never the page, so a phone keeps its width.
   return (
-    <div role="table" aria-label={label} className="border-t border-rule-strong" style={{ '--cols': gridTemplateColumns } as CSSProperties}>
-      <div role="row" className="type-label grid min-h-11 grid-cols-(--cols) items-center gap-3 border-b border-rule-strong bg-sunken px-2 text-ink-2">
-        {headers.map((header, columnIndex) => (
-          <span key={columnIndex} role="columnheader" className={mergeClassNames(header.align === 'end' && 'text-right')}>
-            {header.label}
-          </span>
-        ))}
+    <div className="overflow-x-auto">
+      <div role="table" aria-label={label} className="min-w-max border-t border-rule-strong" style={{ '--cols': gridTemplateColumns } as CSSProperties}>
+        <div role="row" className="type-label grid min-h-11 grid-cols-(--cols) items-center gap-3 border-b border-rule-strong bg-sunken px-2 text-ink-2">
+          {headers.map((header, columnIndex) => (
+            <span key={columnIndex} role="columnheader" className={mergeClassNames(header.align === 'end' && 'text-right')}>
+              {header.label}
+            </span>
+          ))}
+        </div>
+        {children}
       </div>
-      {children}
     </div>
   )
 }

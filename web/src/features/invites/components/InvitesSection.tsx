@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react'
 import { roleLabels } from '../../../shared/lib/roleLabels'
 import { problemMessage } from '../../../shared/lib/problemMessage'
-import { Button, DataCell, DataRow, DataTable, Dialog, MessageBox, SectionHeading, Skeleton, StatusPill } from '../../../shared/ui'
+import { Button, DataCell, DataRow, DataTable, MessageBox, ModalPanel, SectionHeading, Skeleton, StackedRow, StatusPill } from '../../../shared/ui'
 import type { Invite } from '../api/Invite'
 import { useCancelInvite } from '../api/useCancelInvite'
 import { useInvites } from '../api/useInvites'
@@ -46,28 +46,48 @@ export function InvitesSection(): ReactElement {
       {invites.isError && <MessageBox kind="error">The invites could not be loaded. Try again.</MessageBox>}
       {invites.data && invites.data.length === 0 && <p className="text-ink-2">No invites yet.</p>}
       {invites.data && invites.data.length > 0 && (
-        <DataTable
-          label="Invites"
-          gridTemplateColumns="minmax(160px,1fr) 80px 110px 180px"
-          headers={[{ label: 'Email' }, { label: 'Role' }, { label: 'Status' }, { label: '', align: 'end' }]}
-        >
-          {invites.data.map((invite) => (
-            <DataRow key={invite.id}>
-              <DataCell>
-                <span className="type-mono block truncate">{invite.email}</span>
-              </DataCell>
-              <DataCell>{roleLabels[invite.role]}</DataCell>
-              <DataCell>
-                <StatusPill status={invite.status} />
-              </DataCell>
-              <DataCell align="end">{rowActions(invite)}</DataCell>
-            </DataRow>
-          ))}
-        </DataTable>
+        <>
+          <div className="hidden md:block">
+            <DataTable
+              label="Invites"
+              gridTemplateColumns="minmax(160px,1fr) 80px 110px 180px"
+              headers={[{ label: 'Email' }, { label: 'Role' }, { label: 'Status' }, { label: '', align: 'end' }]}
+            >
+              {invites.data.map((invite) => (
+                <DataRow key={invite.id}>
+                  <DataCell>
+                    <span className="type-mono block truncate">{invite.email}</span>
+                  </DataCell>
+                  <DataCell>{roleLabels[invite.role]}</DataCell>
+                  <DataCell>
+                    <StatusPill status={invite.status} />
+                  </DataCell>
+                  <DataCell align="end">{rowActions(invite)}</DataCell>
+                </DataRow>
+              ))}
+            </DataTable>
+          </div>
+          {/* Phones get stacked rows, so Resend and Cancel are in reach instead of off to the side. */}
+          <div className="-mx-4 border-t border-rule-strong md:hidden">
+            {invites.data.map((invite) => (
+              <StackedRow
+                key={invite.id}
+                heading={<span className="type-mono block truncate">{invite.email}</span>}
+                metaText={
+                  <>
+                    {roleLabels[invite.role]}
+                    <StatusPill status={invite.status} />
+                  </>
+                }
+                actions={rowActions(invite)}
+              />
+            ))}
+          </div>
+        </>
       )}
-      <Dialog open={isResultOpen && resend.data !== undefined} onClose={() => setIsResultOpen(false)} title="Invite resent" actions={<Button onClick={() => setIsResultOpen(false)}>Done</Button>}>
+      <ModalPanel open={isResultOpen && resend.data !== undefined} onClose={() => setIsResultOpen(false)} title="Invite resent" actions={<Button onClick={() => setIsResultOpen(false)}>Done</Button>}>
         {resend.data && <SentInviteResult sent={resend.data} />}
-      </Dialog>
+      </ModalPanel>
     </section>
   )
 }

@@ -217,7 +217,8 @@ export function MiniatureForm({ miniature, onReload = () => {} }: MiniatureFormP
           {saveLabel}
         </Button>
       </div>
-      <StickyActionBar className="md:hidden">
+      {/* Pinned to the bottom on phones, edge to edge, so Save lines up with the fields and stays in reach. */}
+      <StickyActionBar className="-mx-4">
         <Button type="submit" variant={saveVariant} fullWidth isLoading={isSubmitting}>
           {saveLabel}
         </Button>

@@ -190,4 +190,29 @@ describe('MembersPage', () => {
 
     expect(changes).toEqual([{ active: true }])
   })
+
+  it('on a phone the invite opens as a bottom sheet, and on a desktop as a dialog', async () => {
+    stubMembers()
+    stubScreenWidth(390)
+    const { unmount } = renderAppAt('/admin/members')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Invite' }))
+    expect(within(screen.getByRole('dialog', { name: 'Invite someone' })).getByRole('button', { name: 'Close' })).toBeInTheDocument()
+    unmount()
+
+    stubScreenWidth(1440)
+    renderAppAt('/admin/members')
+    await userEvent.click(await screen.findByRole('button', { name: 'Invite' }))
+    expect(within(screen.getByRole('dialog', { name: 'Invite someone' })).queryByRole('button', { name: 'Close' })).not.toBeInTheDocument()
+  })
 })
+
+// stubScreenWidth makes matchMedia answer as a screen width pixels wide would.
+function stubScreenWidth(width: number): void {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: Number(/min-width:\s*(\d+)px/.exec(query)?.[1] ?? 0) <= width,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }))
+}

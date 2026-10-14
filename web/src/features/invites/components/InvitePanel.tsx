@@ -4,7 +4,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 import { ApiProblem } from '../../../shared/api/ApiProblem'
 import { showFieldProblems } from '../../../shared/lib/showFieldProblems'
-import { Button, Dialog, Field, MessageBox, Segmented, TextInput } from '../../../shared/ui'
+import { Button, Field, MessageBox, ModalPanel, Segmented, TextInput } from '../../../shared/ui'
 import { useSendInvite } from '../api/useSendInvite'
 import { SentInviteResult } from './SentInviteResult'
 
@@ -15,13 +15,14 @@ const inviteSchema = z.object({
 
 type InviteValues = z.infer<typeof inviteSchema>
 
-type InviteDialogProps = {
+type InvitePanelProps = {
   open: boolean
   onClose: () => void
 }
 
-// InviteDialog invites someone by email with a Role, Member by default (Card 1), then shows the link to copy.
-export function InviteDialog({ open, onClose }: InviteDialogProps): ReactElement {
+// InvitePanel invites someone by email with a Role, Member by default (Card 1), then shows the link to copy, in a
+// ModalPanel: a Dialog on desktops, a bottom Sheet on phones.
+export function InvitePanel({ open, onClose }: InvitePanelProps): ReactElement {
   const sendInvite = useSendInvite()
   const {
     register,
@@ -51,47 +52,44 @@ export function InviteDialog({ open, onClose }: InviteDialogProps): ReactElement
   const sent = sendInvite.data
   const otherFailure = sendInvite.error instanceof ApiProblem && sendInvite.error.fieldProblems.length === 0 ? sendInvite.error.detail : null
 
+  const actions = (
+    sent ? (
+      <Button onClick={close}>Done</Button>
+    ) : (
+      <>
+        <Button onClick={close} disabled={sendInvite.isPending}>
+          Cancel
+        </Button>
+        <Button variant="primary" form="invite-form" type="submit" isLoading={sendInvite.isPending}>
+          Send invite
+        </Button>
+      </>
+    )
+  )
+  const content = sent ? (
+    <SentInviteResult sent={sent} />
+  ) : (
+    <form id="invite-form" noValidate onSubmit={handleSubmit(send)} className="grid gap-4">
+      {otherFailure && <MessageBox kind="error">{otherFailure}</MessageBox>}
+      <Field label="Email" errorMessage={errors.email?.message}>
+        <TextInput type="email" autoComplete="off" placeholder="name@example.com" disabled={sendInvite.isPending} {...register('email')} />
+      </Field>
+      <Segmented
+        label="Role"
+        options={[
+          { value: 'member', label: 'Member' },
+          { value: 'admin', label: 'Admin' },
+        ]}
+        value={role}
+        onChange={(role) => setValue('role', role)}
+        fullWidth
+      />
+    </form>
+  )
+
   return (
-    <Dialog
-      open={open}
-      onClose={close}
-      title="Invite someone"
-      isSaving={sendInvite.isPending}
-      actions={
-        sent ? (
-          <Button onClick={close}>Done</Button>
-        ) : (
-          <>
-            <Button onClick={close} disabled={sendInvite.isPending}>
-              Cancel
-            </Button>
-            <Button variant="primary" form="invite-form" type="submit" isLoading={sendInvite.isPending}>
-              Send invite
-            </Button>
-          </>
-        )
-      }
-    >
-      {sent ? (
-        <SentInviteResult sent={sent} />
-      ) : (
-        <form id="invite-form" noValidate onSubmit={handleSubmit(send)} className="grid gap-4">
-          {otherFailure && <MessageBox kind="error">{otherFailure}</MessageBox>}
-          <Field label="Email" errorMessage={errors.email?.message}>
-            <TextInput type="email" autoComplete="off" placeholder="name@example.com" disabled={sendInvite.isPending} {...register('email')} />
-          </Field>
-          <Segmented
-            label="Role"
-            options={[
-              { value: 'member', label: 'Member' },
-              { value: 'admin', label: 'Admin' },
-            ]}
-            value={role}
-            onChange={(role) => setValue('role', role)}
-            fullWidth
-          />
-        </form>
-      )}
-    </Dialog>
+    <ModalPanel open={open} onClose={close} title="Invite someone" isSaving={sendInvite.isPending} actions={actions}>
+      {content}
+    </ModalPanel>
   )
 }
