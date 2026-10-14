@@ -43,6 +43,13 @@ api_env=(
 )
 
 docker compose -f "$root/compose.yaml" up -d --wait db
+# A first start (an empty volume, as on CI) runs a short setup server that passes the health check, then restarts;
+# wait until Postgres really answers before using it.
+for attempt in $(seq 1 30); do
+  if psql_in_db "SELECT 1;" >/dev/null 2>&1; then break; fi
+  if [ "$attempt" = 30 ]; then echo "Postgres did not accept connections within 30 seconds."; exit 1; fi
+  sleep 1
+done
 psql_in_db "DROP DATABASE IF EXISTS ${database} WITH (FORCE);"
 psql_in_db "CREATE DATABASE ${database};"
 
