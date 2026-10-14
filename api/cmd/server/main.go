@@ -53,7 +53,7 @@ func run() error {
 
 	userService := users.NewService(pool)
 	accessTokens := platformauth.NewAccessTokens(cfg.JWTSecret, time.Now)
-	sender := email.New(cfg.ResendAPIKey, cfg.EmailOutboxDir, cfg.EmailFrom)
+	sender := email.New(cfg.Email)
 	links := email.Links{BaseURL: cfg.AppBaseURL}
 	authService, err := auth.NewService(pool, userService, accessTokens, sender, links, time.Now)
 	if err != nil {

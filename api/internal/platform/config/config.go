@@ -4,8 +4,10 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/mail"
 	"net/url"
 
+	"github.com/BarbieriM/MiniManager/api/internal/platform/email"
 	"github.com/BarbieriM/MiniManager/api/internal/platform/images"
 )
 
@@ -19,14 +21,11 @@ type Config struct {
 	Port        string
 	// WebDir is the built SPA folder. Optional: empty in `make dev`, where Vite serves the SPA.
 	WebDir string
-	// EmailFrom is the sender of invite and reset emails, such as "Mini Manager <minis@example.com>".
-	EmailFrom string
+	// Email chooses how invite and reset emails are sent: From, plus exactly one of a Brevo key (production, ADR
+	// 0006), a Resend key, or an outbox folder (local development).
+	Email email.Settings
 	// AppBaseURL is where the web app runs, for the links in emails, such as https://minis.example.com.
 	AppBaseURL string
-	// Exactly one of ResendAPIKey (send through Resend) and EmailOutboxDir (write emails to files, for local
-	// development) is set.
-	ResendAPIKey   string
-	EmailOutboxDir string
 	// Cloudinary is the account for Photos (Card 7, ADR 0005): all three settings, or none, which leaves Photos off.
 	Cloudinary images.Account
 }
@@ -39,19 +38,23 @@ func (c Config) PhotosEnabled() bool {
 // Load reads the server settings through getenv (os.Getenv in main) and reports every problem at once.
 func Load(getenv func(string) string) (Config, error) {
 	cfg := Config{
-		DatabaseURL:    getenv("DATABASE_URL"),
-		JWTSecret:      []byte(getenv("JWT_SECRET")),
-		Port:           getenv("PORT"),
-		WebDir:         getenv("WEB_DIR"),
-		EmailFrom:      getenv("EMAIL_FROM"),
-		AppBaseURL:     getenv("APP_BASE_URL"),
-		ResendAPIKey:   getenv("RESEND_API_KEY"),
-		EmailOutboxDir: getenv("EMAIL_OUTBOX_DIR"),
+		DatabaseURL: getenv("DATABASE_URL"),
+		JWTSecret:   []byte(getenv("JWT_SECRET")),
+		Port:        getenv("PORT"),
+		WebDir:      getenv("WEB_DIR"),
+		Email: email.Settings{
+			From:         getenv("EMAIL_FROM"),
+			BrevoAPIKey:  getenv("BREVO_API_KEY"),
+			ResendAPIKey: getenv("RESEND_API_KEY"),
+			OutboxDir:    getenv("EMAIL_OUTBOX_DIR"),
+		},
+		AppBaseURL: getenv("APP_BASE_URL"),
 
 		Cloudinary: images.Account{
 			CloudName: getenv("CLOUDINARY_CLOUD_NAME"),
 			APIKey:    getenv("CLOUDINARY_API_KEY"),
 			APISecret: getenv("CLOUDINARY_API_SECRET"),
+			Folder:    getenv("CLOUDINARY_FOLDER"),
 		},
 	}
 
@@ -68,14 +71,15 @@ func Load(getenv func(string) string) (Config, error) {
 	if cfg.Port == "" {
 		problems = append(problems, errors.New("PORT is required"))
 	}
-	if cfg.EmailFrom == "" {
-		problems = append(problems, errors.New("EMAIL_FROM is required"))
+	// Checked here, not when the first email goes out, so a typo stops the server instead of every invite.
+	if _, err := mail.ParseAddress(cfg.Email.From); err != nil {
+		problems = append(problems, errors.New("EMAIL_FROM is required, as an address such as Mini Manager <you@example.com>"))
 	}
 	if baseURL, err := url.Parse(cfg.AppBaseURL); err != nil || (baseURL.Scheme != "http" && baseURL.Scheme != "https") || baseURL.Host == "" {
 		problems = append(problems, errors.New("APP_BASE_URL is required, as an http or https URL such as http://localhost:5173"))
 	}
-	if (cfg.ResendAPIKey == "") == (cfg.EmailOutboxDir == "") {
-		problems = append(problems, errors.New("set exactly one of RESEND_API_KEY or EMAIL_OUTBOX_DIR"))
+	if countSet(cfg.Email.BrevoAPIKey, cfg.Email.ResendAPIKey, cfg.Email.OutboxDir) != 1 {
+		problems = append(problems, errors.New("set exactly one of BREVO_API_KEY, RESEND_API_KEY or EMAIL_OUTBOX_DIR"))
 	}
 	if set := countSet(cfg.Cloudinary.CloudName, cfg.Cloudinary.APIKey, cfg.Cloudinary.APISecret); set != 0 && set != 3 {
 		problems = append(problems, errors.New("set all of CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET, or none to leave photos off"))

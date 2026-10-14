@@ -96,8 +96,8 @@ The recommendation is a single Go service that serves both the REST API and the 
 | Auth | Own implementation: JWT access token (15 min, kept in memory) + opaque refresh token (7 days, httpOnly cookie, stored hashed, rotated) | Hosted auth (Supabase Auth, Clerk) | Invite-only sign-up, roles and "last admin" rules are simple enough to build, and building them is good learning. Hosted auth saves about a week but splits users across two systems. |
 | Image storage | Cloudinary free plan, signed direct upload from the browser | Cloudflare R2 (S3-compatible, generous free storage) | Cloudinary resizes, strips EXIF and fixes rotation for you (Card 7 rules 2 and 4). With R2 you would write that image pipeline yourself. |
 | Database | PostgreSQL on Neon free plan | MongoDB Atlas free | See section 4. |
-| Hosting | Render free web service (Docker, no card needed) | Google Cloud Run | You asked for a fully free option with no card, and Render, Neon, Cloudinary and Resend all sign up without one. The cost is a cold start: Render's free service sleeps after about 15 idle minutes and takes up to a minute to wake. A free uptime ping (UptimeRobot every 10 minutes) keeps it awake on game nights. Cloud Run wakes in about a second but needs a card on file. |
-| Email | Resend free plan (invites, password reset) | Gmail SMTP | Resend has a proper API and deliverability, and its free plan is far above what 10 users need. |
+| Hosting | Render free web service (Docker; it may ask for a card as a check only, never charged on Free) | Google Cloud Run | You asked for a fully free option, and Render, Neon, Cloudinary and Brevo all have free plans that bill nothing. The cost is a cold start: Render's free service sleeps after about 15 idle minutes and takes up to a minute to wake, which the waking banner covers; a keep-awake ping was left out (step 6) and can be added if game nights feel slow. Render's free plan also blocks SMTP, hence Brevo over HTTPS (ADR 0006). Cloud Run wakes in about a second but needs a card on file. |
+| Email | Brevo free plan over HTTPS in production, with a verified Gmail sender (ADR 0006); Resend or a local outbox in development | Resend in production; Gmail SMTP | Resend delivers only to the account owner without a paid domain, and Render's free plan blocks SMTP ports, so Gmail SMTP cannot leave the server. Brevo sends to anyone over HTTPS from one verified address, free. |
 | CI / deploy | GitHub Actions: test, build container, deploy to Render on push to `main` | Manual deploys | It's free for a personal repo and makes every deploy repeatable. |
 
 ### Component diagram
@@ -106,7 +106,7 @@ The recommendation is a single Go service that serves both the REST API and the 
 flowchart LR
   B[Browser: React SPA] -->|HTTPS /api/v1 + static files| G[Go service on Render free]
   G -->|SQL| N[(PostgreSQL on Neon)]
-  G -->|send invites, resets| R[Resend]
+  G -->|send invites, resets| R[Brevo]
   G -->|sign upload, delete| C[Cloudinary]
   B -->|photo bytes, signed upload| C
 ```
@@ -152,7 +152,7 @@ mini-manager/
 
 ### Libraries
 
-Go removes a library from `go.mod` when no code imports it, so each Go library is added in the build step that first uses it. Cloudinary and Resend are called with plain `net/http` (no SDKs), inside `platform/images` and `platform/email`. Tool versions and the frontend toolchain are in ADR 0001.
+Go removes a library from `go.mod` when no code imports it, so each Go library is added in the build step that first uses it. Cloudinary, Brevo and Resend are called with plain `net/http` (no SDKs), inside `platform/images` and `platform/email`. Tool versions and the frontend toolchain are in ADR 0001.
 
 | Go library | Purpose | Added in build step |
 | --- | --- | --- |
@@ -486,4 +486,4 @@ Suggested build order inside the MVP:
 3. Filter registry and the 7 MVP filters, with filters stored in the URL.
 4. Roles enforced, invites, password reset by email, and edit profile (Card 3).
 5. Photos (Card 7), and the Catalog photo grid on desktop.
-6. Phone polish: bottom-sheet filters, camera upload, a real-device test.
+6. Phone polish (bottom-sheet filters and camera upload already exist; the invite sheet and a 390 px audit), Playwright end-to-end tests, the first deploy on free plans, and a real-device test.

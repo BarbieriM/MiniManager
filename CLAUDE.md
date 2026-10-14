@@ -26,9 +26,11 @@ Card numbers: 1 invite and sign-up, 2 login/logout/reset, 3 profile, 4 roles and
   filter query, `goose` migrations, `argon2id` passwords, `golang-jwt/jwt/v5`.
 - **Frontend:** React 19 + Vite + TypeScript, React Router v8, TanStack Query, React Hook Form + Zod.
   Styling = Tailwind CSS v4 with the design-system tokens as its theme (no UI kit, no shadcn).
-- **Data:** PostgreSQL (Neon free). **Images:** Cloudinary (signed direct upload). **Email:** Resend.
+- **Data:** PostgreSQL (Neon free). **Images:** Cloudinary (signed direct upload). **Email:** Brevo in production (HTTPS API; ADR 0006), Resend or a local outbox in
+  development.
 - **Hosting:** one Docker image on Render free tier; Go serves the API under `/api/v1` and the built SPA.
-- **CI:** GitHub Actions: lint, test (with a real Postgres), build image, deploy on `main`.
+- **CI:** GitHub Actions: lint, test (with a real Postgres), end-to-end tests (Playwright at phone size), build
+  image, deploy on `main` once all of them pass.
 
 Free tier only. Do not add a paid service or anything that needs a credit card.
 If NestJS ever replaces Go (agreed fallback if Go stalls), the API contract and database stay the same.
@@ -62,11 +64,13 @@ make dev          # local db + api with live reload + vite dev server (vite prox
 make db           # start the local Postgres 18 from compose.yaml on port 5433 (applies no migrations)
 make test         # go test ./... (needs Docker for testcontainers) + yarn test
 make lint         # sqlc diff, go vet, staticcheck, gofmt check, oxlint, tsc -b --noEmit
+make e2e          # Playwright main flows at 390 px against a throwaway database (needs the local Postgres)
 make sqlc         # regenerate Go code from queries.sql
 make migrate-new name=add_x   # new numbered goose migration
 make migrate-status           # applied and pending migrations (creates goose_db_version on a fresh db)
 make migrate      # goose up against DATABASE_URL: Mateus only, after reviewing the migration (ADR 0002)
 make seed         # first Admin from SEED_ADMIN_*: Mateus only
+./scripts/deploy-wizard.sh    # first deploy (Neon, Brevo, Cloudinary, Render, deploy hook, migrate + seed): Mateus only
 ```
 
 Never run `make migrate` or `make seed` against any database yourself; write the files and let Mateus apply them.
@@ -154,7 +158,7 @@ Full rules are in `docs/context.md`. The short version:
 
 Build order: (1) skeleton: Go serves a blank SPA, Postgres, migration 0001, seed Admin, login/logout, deployed by
 CI; (2) miniature CRUD with version check; (3) filter registry + 7 MVP filters in the URL; (4) roles, invites,
-password reset email, edit profile; (5) photos (max 3, 5 MB, JPEG/PNG/WebP) and the Catalog photo grid; (6) phone polish.
+password reset email, edit profile; (5) photos (max 3, 5 MB, JPEG/PNG/WebP) and the Catalog photo grid; (6) phone polish, end-to-end tests and the first deploy.
 
 Out of the MVP: lists and share links, Google login, CSV import/export, encounter picker, saved presets,
 custom fields, storage location and manufacturer as filters. Do not build these unless asked.

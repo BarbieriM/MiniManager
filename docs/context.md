@@ -284,6 +284,7 @@ Library test for behaviour (not snapshots). Keep variant styles in a `variants` 
 | `TileGrid` / `ViewToggle` | The photo grid's columns (3, then 4 at `lg`, 5 at `xl`) and the Table/Photo grid toggle in the Catalog's page header (desktop only). |
 | `CoverThumbnail` | Fills its box with a Miniature's cover thumbnail, or the size placeholder without one (Card 7 rule 8); used by the table, the cards and the tiles. |
 | `SectionHeading` | `type-title` heading of one section of a screen, with the id the section names itself by (Photos, Users, Invites). |
+| `StackedRow` | Phone list row: heading and meta on one line, full-width actions below; used instead of a table row where the table would not fit (invites on phones). `MobileListRow` is a `StackedRow` about a person. |
 | `FilterRail` (desktop, 280 px) and `FilterSheet` (mobile) | Render controls from `GET /api/v1/filters` definitions (Card 6); groups collapse; active filters appear as `FilterChip`s above results with "Clear all". Chip hover for removal turns accent. `shared/ui/FilterRail` is the column frame; the phone sheet is a `Sheet`; `features/filters` draws the controls. |
 | `FilterGroup` | One filter in the rail or sheet: groups sit flush, split by a `border-rule` line; the heading (`type-label`, 44 px) has a chevron on the right and opens or closes the controls. |
 | `FilterChipRow` | Wrapping row of `FilterChip`s and "Clear all" above the results. |
@@ -297,7 +298,7 @@ Library test for behaviour (not snapshots). Keep variant styles in a `variants` 
 | `Breadcrumbs`, `PageHeader` (desktop) | Last crumb is not a link; header holds display title, one mono meta line, the single primary action. |
 | `DefinitionList` | Details page "ledger entry": small-caps label left, value right, hairline between rows. |
 | `PhotoViewer` | One large photo with cover badge and "1 / 3" count, row of 72 px thumbs; current thumb has a 2 px ink border; no photo shows the base glyph + "No photo yet". |
-| `DataRow` / `MobileListRow` | Members and invites: 56 px ruled rows with a mono email line; on phones stacked with full-width action buttons. `DataTable` takes a `label` that names the table for screen readers. |
+| `DataRow` / `MobileListRow` | Members and invites: 56 px ruled rows with a mono email line; on phones stacked with full-width action buttons. `DataTable` takes a `label` that names the table for screen readers, and scrolls sideways inside its own box when wider than the screen, never the page. |
 | `RowLinkList` | Profile links on phone (Change password, Members for admins, Log out): 48 px rows with chevron. |
 
 ## Screens and routes (MVP)

@@ -41,7 +41,7 @@ export function ChangePasswordPage(): ReactElement {
   }
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex min-h-full flex-1 flex-col">
       <MobileHeader backLink={{ to: '/profile', label: 'Profile' }} />
       <PageBody>
         <PageHeader title="Change password" />

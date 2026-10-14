@@ -4,7 +4,7 @@ import { initialsFromDisplayName } from '../../../shared/lib/initialsFromDisplay
 import { roleLabels } from '../../../shared/lib/roleLabels'
 import { Button, DataCell, DataRow, DataTable, MessageBox, MobileHeader, MobileListRow, PageBody, PageHeader, Person, SectionHeading, Skeleton } from '../../../shared/ui'
 import { useSession } from '../../auth/lib/useSession'
-import { InviteDialog } from '../../invites/components/InviteDialog'
+import { InvitePanel } from '../../invites/components/InvitePanel'
 import { InvitesSection } from '../../invites/components/InvitesSection'
 import type { Member } from '../api/Member'
 import { useMembers } from '../api/useMembers'
@@ -40,7 +40,7 @@ function AdminMembersPage({ currentUserId }: { currentUserId: string }): ReactEl
     ))
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex min-h-full flex-1 flex-col">
       <MobileHeader backLink={{ to: '/profile', label: 'Profile' }} />
       <PageBody>
         <PageHeader
@@ -99,7 +99,7 @@ function AdminMembersPage({ currentUserId }: { currentUserId: string }): ReactEl
         </section>
         <InvitesSection />
       </PageBody>
-      <InviteDialog open={isInviteOpen} onClose={() => setIsInviteOpen(false)} />
+      <InvitePanel open={isInviteOpen} onClose={() => setIsInviteOpen(false)} />
       <MemberActionDialog action={pendingAction} onClose={() => setPendingAction(null)} />
     </div>
   )
